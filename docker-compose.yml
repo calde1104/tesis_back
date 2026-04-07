@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    ports:
+      - "5000:5000"
+    networks:
+      - tesis-network
+    restart: always
+
+networks:
+  tesis-network:
+    external: true
