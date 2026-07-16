@@ -47,7 +47,8 @@ public class DashboardService {
                 .map(p -> p.marketShareUnidadesPromedio())
                 .orElse(null);
         Double priceGapProm = marketShareService.getPriceGap(empresaId).stream()
-                .mapToDouble(p -> p.priceGapPct() != null ? p.priceGapPct() : 0)
+                .filter(p -> p.priceGapPct() != null)
+                .mapToDouble(p -> p.priceGapPct())
                 .average()
                 .stream().boxed().findFirst().orElse(null);
         return DashboardMapper.toKpisDto(anio, mes, summary, marketShareProm, priceGapProm);

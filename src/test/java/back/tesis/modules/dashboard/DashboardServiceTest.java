@@ -1,5 +1,6 @@
 package back.tesis.modules.dashboard;
 
+import back.tesis.dto.marketshare.PriceGapDto;
 import back.tesis.dto.sales.SalesSummaryDto;
 import back.tesis.entities.EmpresaRepository;
 import back.tesis.modules.context.ContextService;
@@ -43,5 +44,40 @@ class DashboardServiceTest {
 
         assertThat(result.ventasUnidades()).isEqualTo(500L);
         assertThat(result.proyeccionUnidadesMes()).isNull();
+    }
+
+    @Test
+    void getPriceGapPromedioExcludesNullValuesAndIncludesOnlyNonNulls() {
+        when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
+        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
+        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of(
+                new PriceGapDto("prod-1", 10.0, 5.0, 2024, 3),
+                new PriceGapDto("prod-2", 20.0, null, 2024, 3),
+                new PriceGapDto("prod-3", 30.0, 15.0, 2024, 3)
+        ));
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService);
+
+        var result = service.getKpis("emp-1", 2024, 3);
+
+        assertThat(result.priceGapPctPromedio()).isEqualTo(10.0);
+    }
+
+    @Test
+    void getPriceGapPromedioReturnsNullWhenAllValuesAreNull() {
+        when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
+        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
+        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of(
+                new PriceGapDto("prod-1", 10.0, null, 2024, 3),
+                new PriceGapDto("prod-2", 20.0, null, 2024, 3)
+        ));
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService);
+
+        var result = service.getKpis("emp-1", 2024, 3);
+
+        assertThat(result.priceGapPctPromedio()).isNull();
     }
 }
