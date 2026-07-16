@@ -98,6 +98,19 @@ CREATE TABLE productos_versiones (
     CONSTRAINT productos_versiones_chk_2 CHECK (unidad_medida IN ('ml','gr','kg','lt','un'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE config_sistema (
+    id INT NOT NULL AUTO_INCREMENT,
+    id_empresa VARCHAR(36) NOT NULL,
+    id_producto VARCHAR(36) DEFAULT NULL,
+    parametro VARCHAR(100) NOT NULL,
+    valor TEXT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_config (id_empresa, parametro),
+    KEY idx_cs_producto (id_producto),
+    CONSTRAINT fk_cfg_empresa FOREIGN KEY (id_empresa) REFERENCES empresa (id),
+    CONSTRAINT fk_cs_producto FOREIGN KEY (id_producto) REFERENCES productos (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 CREATE TABLE archivos_ingesta (
     id VARCHAR(36) NOT NULL DEFAULT (uuid()),
     id_empresa VARCHAR(36) NOT NULL,
