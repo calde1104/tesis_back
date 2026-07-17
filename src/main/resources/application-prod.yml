@@ -5,6 +5,10 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+
 logging:
   level:
     back.tesis: INFO

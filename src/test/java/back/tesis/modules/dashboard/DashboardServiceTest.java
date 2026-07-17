@@ -1,6 +1,7 @@
 package back.tesis.modules.dashboard;
 
 import back.tesis.dto.marketshare.PriceGapDto;
+import back.tesis.dto.sales.MonthlyRevenueDto;
 import back.tesis.dto.sales.SalesSummaryDto;
 import back.tesis.entities.EmpresaRepository;
 import back.tesis.modules.context.ContextService;
@@ -79,5 +80,26 @@ class DashboardServiceTest {
         var result = service.getKpis("emp-1", 2024, 3);
 
         assertThat(result.priceGapPctPromedio()).isNull();
+    }
+
+    @Test
+    void getSalesEvolutionPopulatesMontoFacturadoFromRealSalesAndLeavesForecastNull() {
+        when(salesService.getMonthlyRevenue("emp-1")).thenReturn(List.of(
+                new MonthlyRevenueDto(2024, 1, new BigDecimal("1000.00")),
+                new MonthlyRevenueDto(2024, 2, new BigDecimal("2500.50"))
+        ));
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService);
+
+        var result = service.getSalesEvolution("emp-1");
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).anio()).isEqualTo(2024);
+        assertThat(result.get(0).mes()).isEqualTo(1);
+        assertThat(result.get(0).montoFacturado()).isEqualByComparingTo("1000.00");
+        assertThat(result.get(0).unidadesPronosticadas()).isNull();
+        assertThat(result.get(1).montoFacturado()).isEqualByComparingTo("2500.50");
+        assertThat(result.get(1).unidadesPronosticadas()).isNull();
     }
 }

@@ -55,7 +55,7 @@ public class DashboardService {
     }
 
     public List<SalesEvolutionPointDto> getSalesEvolution(String empresaId) {
-        return marketShareService.getOverview(empresaId).stream()
+        return salesService.getMonthlyRevenue(empresaId).stream()
                 .map(DashboardMapper::toSalesEvolutionDto)
                 .toList();
     }

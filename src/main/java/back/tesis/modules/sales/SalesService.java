@@ -1,5 +1,6 @@
 package back.tesis.modules.sales;
 
+import back.tesis.dto.sales.MonthlyRevenueDto;
 import back.tesis.dto.sales.SaleItemDto;
 import back.tesis.dto.sales.SalesFilterOptionsDto;
 import back.tesis.dto.sales.SalesSummaryDto;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 public class SalesService {
@@ -44,6 +46,12 @@ public class SalesService {
         long totalUnidades = row.getTotalUnidades() != null ? row.getTotalUnidades() : 0L;
         BigDecimal totalFacturado = row.getTotalFacturado() != null ? row.getTotalFacturado() : BigDecimal.ZERO;
         return new SalesSummaryDto(totalUnidades, totalFacturado);
+    }
+
+    public List<MonthlyRevenueDto> getMonthlyRevenue(String empresaId) {
+        return salesRepository.findMonthlyRevenue(empresaId).stream()
+                .map(row -> new MonthlyRevenueDto(row.getAnio(), row.getMes(), row.getMontoFacturado()))
+                .toList();
     }
 
     public SalesFilterOptionsDto getFilterOptions(String empresaId) {

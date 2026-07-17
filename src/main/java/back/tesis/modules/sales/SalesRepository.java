@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface SalesRepository extends JpaRepository<VentaMensual, Long> {
 
@@ -54,4 +55,19 @@ public interface SalesRepository extends JpaRepository<VentaMensual, Long> {
             @Param("anio") Integer anio,
             @Param("mes") Integer mes
     );
+
+    interface MonthlyRevenueRow {
+        Integer getAnio();
+        Integer getMes();
+        BigDecimal getMontoFacturado();
+    }
+
+    @Query("""
+            SELECT v.anio AS anio, v.mes AS mes, SUM(v.montoFacturado) AS montoFacturado
+            FROM VentaMensual v
+            WHERE v.empresaId = :empresaId
+            GROUP BY v.anio, v.mes
+            ORDER BY v.anio, v.mes
+            """)
+    List<MonthlyRevenueRow> findMonthlyRevenue(@Param("empresaId") String empresaId);
 }
