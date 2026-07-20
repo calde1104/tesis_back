@@ -20,9 +20,14 @@ import java.util.HexFormat;
 public class IngestionService {
 
     private final ArchivoIngestaRepository repository;
+    private final VentaCountRepository ventaMensualCountRepository;
+    private final VentaSemanalCountRepository ventaSemanalCountRepository;
 
-    public IngestionService(ArchivoIngestaRepository repository) {
+    public IngestionService(ArchivoIngestaRepository repository, VentaCountRepository ventaMensualCountRepository,
+                           VentaSemanalCountRepository ventaSemanalCountRepository) {
         this.repository = repository;
+        this.ventaMensualCountRepository = ventaMensualCountRepository;
+        this.ventaSemanalCountRepository = ventaSemanalCountRepository;
     }
 
     public UploadResponseDto upload(String empresaId, MultipartFile file, String granularidad,
@@ -46,7 +51,10 @@ public class IngestionService {
 
     public Page<IngestionHistoryItemDto> getHistory(String empresaId, Pageable pageable) {
         return repository.findByEmpresaIdOrderByFechaRecepcionDesc(empresaId, pageable)
-                .map(IngestionMapper::toDto);
+                .map(archivo -> IngestionMapper.toDto(
+                        archivo,
+                        ventaMensualCountRepository.countByArchivoId(archivo.getId())
+                                + ventaSemanalCountRepository.countByArchivoId(archivo.getId())));
     }
 
     public UploadResponseDto resync(String empresaId, String archivoId) {

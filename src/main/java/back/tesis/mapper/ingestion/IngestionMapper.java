@@ -9,10 +9,10 @@ public final class IngestionMapper {
     private IngestionMapper() {
     }
 
-    public static IngestionHistoryItemDto toDto(ArchivoIngesta entity) {
+    public static IngestionHistoryItemDto toDto(ArchivoIngesta entity, long cantRegistros) {
         return new IngestionHistoryItemDto(
                 entity.getId(), entity.getNombreArchivo(), entity.getEstado(), entity.getGranularidad(),
-                entity.getPeriodoDesde(), entity.getPeriodoHasta(), entity.getFechaRecepcion());
+                entity.getPeriodoDesde(), entity.getPeriodoHasta(), entity.getFechaRecepcion(), cantRegistros);
     }
 
     public static UploadResponseDto toUploadResponseDto(ArchivoIngesta entity, String mensaje) {

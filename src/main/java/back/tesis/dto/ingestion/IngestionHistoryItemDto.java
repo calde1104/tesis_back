@@ -10,6 +10,7 @@ public record IngestionHistoryItemDto(
         String granularidad,
         LocalDate periodoDesde,
         LocalDate periodoHasta,
-        LocalDateTime fechaRecepcion
+        LocalDateTime fechaRecepcion,
+        long cantRegistros
 ) {
 }

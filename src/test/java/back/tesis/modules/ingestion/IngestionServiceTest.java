@@ -2,19 +2,25 @@ package back.tesis.modules.ingestion;
 
 import back.tesis.common.exceptions.ConflictException;
 import back.tesis.common.exceptions.ResourceNotFoundException;
+import back.tesis.dto.ingestion.IngestionHistoryItemDto;
 import back.tesis.entities.ArchivoIngesta;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,12 +29,18 @@ class IngestionServiceTest {
     @Mock
     private ArchivoIngestaRepository repository;
 
+    @Mock
+    private VentaCountRepository ventaMensualCountRepository;
+
+    @Mock
+    private VentaSemanalCountRepository ventaSemanalCountRepository;
+
     @Test
     void uploadRejectsDuplicateHash() {
         MockMultipartFile file = new MockMultipartFile("file", "ventas.xlsx", "application/octet-stream", "contenido".getBytes());
         when(repository.existsByHashSha256(any())).thenReturn(true);
 
-        IngestionService service = new IngestionService(repository);
+        IngestionService service = new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository);
 
         assertThatThrownBy(() -> service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31)))
                 .isInstanceOf(ConflictException.class);
@@ -41,7 +53,7 @@ class IngestionServiceTest {
         when(repository.findByIdAndEmpresaId("arch-1", "emp-1")).thenReturn(Optional.of(archivo));
         when(repository.save(archivo)).thenReturn(archivo);
 
-        IngestionService service = new IngestionService(repository);
+        IngestionService service = new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository);
         service.borrar("emp-1", "arch-1");
 
         assertThat(archivo.getEstado()).isEqualTo(ArchivoIngesta.ESTADO_ELIMINADO);
@@ -51,9 +63,25 @@ class IngestionServiceTest {
     void borrarThrowsWhenArchivoNotFoundForEmpresa() {
         when(repository.findByIdAndEmpresaId("arch-x", "emp-1")).thenReturn(Optional.empty());
 
-        IngestionService service = new IngestionService(repository);
+        IngestionService service = new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository);
 
         assertThatThrownBy(() -> service.borrar("emp-1", "arch-x"))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void getHistoryIncludesCantRegistrosFromVentasMensualesYSemanales() {
+        ArchivoIngesta archivo = new ArchivoIngesta("emp-1", "ventas.xlsx", "hash1", "MENSUAL",
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
+        Page<ArchivoIngesta> page = new PageImpl<>(List.of(archivo));
+        when(repository.findByEmpresaIdOrderByFechaRecepcionDesc(eq("emp-1"), any())).thenReturn(page);
+        when(ventaMensualCountRepository.countByArchivoId(archivo.getId())).thenReturn(150L);
+        when(ventaSemanalCountRepository.countByArchivoId(archivo.getId())).thenReturn(0L);
+
+        IngestionService service = new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository);
+
+        Page<IngestionHistoryItemDto> result = service.getHistory("emp-1", PageRequest.of(0, 10));
+
+        assertThat(result.getContent().get(0).cantRegistros()).isEqualTo(150L);
     }
 }
