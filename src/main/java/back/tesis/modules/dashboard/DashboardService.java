@@ -68,7 +68,7 @@ public class DashboardService {
             cutoffMes += 12;
         }
 
-        List<String> productosActivos = assortmentRepository.findActiveProductoIds(empresaId, cutoffAnio, cutoffMes);
+        List<String> productosActivos = assortmentRepository.findActiveProductoIds(empresaId, cutoffAnio, cutoffMes, anio, mes);
         if (productosActivos.isEmpty()) {
             return null;
         }

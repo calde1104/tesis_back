@@ -91,7 +91,7 @@ class DashboardServiceTest {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
         when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
         when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of());
-        when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt()))
+        when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt()))
                 .thenReturn(List.of("prod-1", "prod-2"));
         when(assortmentRepository.findCategoriaIdsForProductos(List.of("prod-1", "prod-2")))
                 .thenReturn(List.of(10, 20));
@@ -110,7 +110,7 @@ class DashboardServiceTest {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(0L, BigDecimal.ZERO));
         when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
         when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of());
-        when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt())).thenReturn(List.of());
+        when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(List.of());
 
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);

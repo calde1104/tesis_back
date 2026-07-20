@@ -14,11 +14,14 @@ public interface AssortmentRepository extends JpaRepository<VentaMensual, Long> 
             FROM VentaMensual v
             WHERE v.empresaId = :empresaId
               AND (v.anio > :cutoffAnio OR (v.anio = :cutoffAnio AND v.mes >= :cutoffMes))
+              AND (v.anio < :anio OR (v.anio = :anio AND v.mes <= :mes))
             """)
     List<String> findActiveProductoIds(
             @Param("empresaId") String empresaId,
             @Param("cutoffAnio") int cutoffAnio,
-            @Param("cutoffMes") int cutoffMes
+            @Param("cutoffMes") int cutoffMes,
+            @Param("anio") int anio,
+            @Param("mes") int mes
     );
 
     @Query("""
