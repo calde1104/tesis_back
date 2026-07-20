@@ -7,6 +7,7 @@ import back.tesis.dto.dashboard.KpisDto;
 import back.tesis.dto.dashboard.MarketShareCompositionDto;
 import back.tesis.dto.dashboard.SalesEvolutionPointDto;
 import back.tesis.dto.sales.SalesSummaryDto;
+import back.tesis.entities.Empresa;
 import back.tesis.entities.EmpresaRepository;
 import back.tesis.mapper.dashboard.DashboardMapper;
 import back.tesis.modules.context.ContextService;
@@ -15,6 +16,8 @@ import back.tesis.modules.sales.SalesService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class DashboardService {
@@ -93,10 +96,19 @@ public class DashboardService {
     }
 
     public List<MarketShareCompositionDto> getMarketShareComposition(String empresaId, int anio, int mes) {
-        return compositionRepository.findComposicionPorPeriodo(anio, mes).stream()
+        List<MarketShareCompositionRepository.CompositionRow> rows =
+                compositionRepository.findComposicionPorPeriodo(anio, mes);
+
+        List<String> empresaIds = rows.stream()
+                .map(MarketShareCompositionRepository.CompositionRow::getEmpresaId)
+                .toList();
+
+        Map<String, String> nombresPorEmpresa = empresaRepository.findAllById(empresaIds).stream()
+                .collect(Collectors.toMap(Empresa::getId, Empresa::getNombre));
+
+        return rows.stream()
                 .map(row -> DashboardMapper.toCompositionDto(
-                        row,
-                        empresaRepository.findById(row.getEmpresaId()).map(e -> e.getNombre()).orElse("(desconocida)")))
+                        row, nombresPorEmpresa.getOrDefault(row.getEmpresaId(), "(desconocida)")))
                 .toList();
     }
 
