@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/v1/{empresaId}/sales")
 public class SalesController {
@@ -24,15 +26,15 @@ public class SalesController {
     @GetMapping
     public PaginatedResponse<SaleItemDto> listSales(
             @PathVariable String empresaId,
-            @RequestParam int anio,
-            @RequestParam(required = false) Integer mes,
+            @RequestParam List<Integer> anios,
+            @RequestParam(required = false) List<Integer> meses,
             @RequestParam(required = false) String marcaId,
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) Integer departamentoId,
             Pageable pageable
     ) {
         return PaginatedResponse.of(
-                salesService.listSales(empresaId, anio, mes, marcaId, categoriaId, departamentoId, pageable));
+                salesService.listSales(empresaId, anios, meses, marcaId, categoriaId, departamentoId, pageable));
     }
 
     @GetMapping("/summary")

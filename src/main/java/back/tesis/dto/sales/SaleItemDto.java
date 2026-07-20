@@ -8,6 +8,12 @@ public record SaleItemDto(
         int mes,
         int unidadesVendidas,
         BigDecimal montoFacturado,
-        BigDecimal precioUnitario
+        BigDecimal precioUnitario,
+        String sku,
+        String descripcionProducto,
+        String marcaNombre,
+        String categoriaNombre,
+        Float contenidoNeto,
+        String unidadMedida
 ) {
 }

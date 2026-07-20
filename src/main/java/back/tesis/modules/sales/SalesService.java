@@ -2,6 +2,7 @@ package back.tesis.modules.sales;
 
 import back.tesis.dto.sales.MonthlyRevenueDto;
 import back.tesis.dto.sales.SaleItemDto;
+import back.tesis.dto.sales.CategoryFilterOptionDto;
 import back.tesis.dto.sales.SalesFilterOptionsDto;
 import back.tesis.dto.sales.SalesSummaryDto;
 import back.tesis.mapper.sales.SalesMapper;
@@ -33,11 +34,11 @@ public class SalesService {
     }
 
     public Page<SaleItemDto> listSales(
-            String empresaId, int anio, Integer mes,
+            String empresaId, List<Integer> anios, List<Integer> meses,
             String marcaId, Integer categoriaId, Integer departamentoId,
             Pageable pageable
     ) {
-        return salesRepository.findSales(empresaId, anio, mes, marcaId, categoriaId, departamentoId, pageable)
+        return salesRepository.findSales(empresaId, anios, meses, marcaId, categoriaId, departamentoId, pageable)
                 .map(SalesMapper::toDto);
     }
 
@@ -62,7 +63,7 @@ public class SalesService {
                 .map(SalesMapper::toDto)
                 .toList();
         var categorias = categoriaRepository.findAllByOrderByNombre().stream()
-                .map(SalesMapper::toDto)
+                .map(SalesMapper::toCategoryFilterOptionDto)
                 .toList();
         return new SalesFilterOptionsDto(marcas, departamentos, categorias);
     }

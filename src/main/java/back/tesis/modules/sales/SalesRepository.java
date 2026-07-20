@@ -12,11 +12,36 @@ import java.util.List;
 
 public interface SalesRepository extends JpaRepository<VentaMensual, Long> {
 
+    interface SaleRow {
+        String getProductoId();
+        int getAnio();
+        int getMes();
+        int getUnidadesVendidas();
+        BigDecimal getMontoFacturado();
+        BigDecimal getPrecioUnitario();
+        String getSku();
+        String getDescripcionProducto();
+        String getMarcaNombre();
+        String getCategoriaNombre();
+        Float getContenidoNeto();
+        String getUnidadMedida();
+    }
+
     @Query("""
-            SELECT v FROM VentaMensual v
+            SELECT
+                v.productoId AS productoId, v.anio AS anio, v.mes AS mes,
+                v.unidadesVendidas AS unidadesVendidas, v.montoFacturado AS montoFacturado,
+                v.precioUnitario AS precioUnitario,
+                (SELECT p.sku FROM Producto p WHERE p.id = v.productoId) AS sku,
+                (SELECT p.descripcion FROM Producto p WHERE p.id = v.productoId) AS descripcionProducto,
+                (SELECT m.nombre FROM Producto p JOIN Marca m ON m.id = p.marcaId WHERE p.id = v.productoId) AS marcaNombre,
+                (SELECT pv.categoria.nombre FROM ProductoVersion pv WHERE pv.producto.id = v.productoId AND pv.vigenciaHasta IS NULL) AS categoriaNombre,
+                (SELECT p.contenidoNeto FROM Producto p WHERE p.id = v.productoId) AS contenidoNeto,
+                (SELECT p.unidadMedida FROM Producto p WHERE p.id = v.productoId) AS unidadMedida
+            FROM VentaMensual v
             WHERE v.empresaId = :empresaId
-              AND v.anio = :anio
-              AND (:mes IS NULL OR v.mes = :mes)
+              AND v.anio IN :anios
+              AND (:meses IS NULL OR v.mes IN :meses)
               AND (:marcaId IS NULL OR v.productoId IN (
                   SELECT p.id FROM Producto p WHERE p.marcaId = :marcaId
               ))
@@ -28,10 +53,10 @@ public interface SalesRepository extends JpaRepository<VentaMensual, Long> {
               ))
             ORDER BY v.anio DESC, v.mes DESC
             """)
-    Page<VentaMensual> findSales(
+    Page<SaleRow> findSales(
             @Param("empresaId") String empresaId,
-            @Param("anio") int anio,
-            @Param("mes") Integer mes,
+            @Param("anios") List<Integer> anios,
+            @Param("meses") List<Integer> meses,
             @Param("marcaId") String marcaId,
             @Param("categoriaId") Integer categoriaId,
             @Param("departamentoId") Integer departamentoId,
