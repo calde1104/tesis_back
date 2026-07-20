@@ -19,24 +19,29 @@ import java.util.List;
 @Service
 public class DashboardService {
 
+    private static final int MESES_VENTANA_ACTIVO = 12;
+
     private final SalesService salesService;
     private final MarketShareService marketShareService;
     private final MarketShareCompositionRepository compositionRepository;
     private final EmpresaRepository empresaRepository;
     private final ContextService contextService;
+    private final AssortmentRepository assortmentRepository;
 
     public DashboardService(
             SalesService salesService,
             MarketShareService marketShareService,
             MarketShareCompositionRepository compositionRepository,
             EmpresaRepository empresaRepository,
-            ContextService contextService
+            ContextService contextService,
+            AssortmentRepository assortmentRepository
     ) {
         this.salesService = salesService;
         this.marketShareService = marketShareService;
         this.compositionRepository = compositionRepository;
         this.empresaRepository = empresaRepository;
         this.contextService = contextService;
+        this.assortmentRepository = assortmentRepository;
     }
 
     public KpisDto getKpis(String empresaId, int anio, int mes) {
@@ -51,7 +56,34 @@ public class DashboardService {
                 .mapToDouble(p -> p.priceGapPct())
                 .average()
                 .stream().boxed().findFirst().orElse(null);
-        return DashboardMapper.toKpisDto(anio, mes, summary, marketShareProm, priceGapProm);
+        Double shareOfAssortmentPct = calcularShareOfAssortment(empresaId, anio, mes);
+        return DashboardMapper.toKpisDto(anio, mes, summary, marketShareProm, priceGapProm, shareOfAssortmentPct);
+    }
+
+    private Double calcularShareOfAssortment(String empresaId, int anio, int mes) {
+        int cutoffAnio = anio;
+        int cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
+        if (cutoffMes <= 0) {
+            cutoffAnio -= 1;
+            cutoffMes += 12;
+        }
+
+        List<String> productosActivos = assortmentRepository.findActiveProductoIds(empresaId, cutoffAnio, cutoffMes);
+        if (productosActivos.isEmpty()) {
+            return null;
+        }
+
+        List<Integer> categoriaIds = assortmentRepository.findCategoriaIdsForProductos(productosActivos);
+        if (categoriaIds.isEmpty()) {
+            return null;
+        }
+
+        long totalMercado = assortmentRepository.countMarketProductosByCategorias(categoriaIds);
+        if (totalMercado == 0) {
+            return null;
+        }
+
+        return 100.0 * productosActivos.size() / totalMercado;
     }
 
     public List<SalesEvolutionPointDto> getSalesEvolution(String empresaId) {

@@ -9,6 +9,7 @@ public record KpisDto(
         BigDecimal ventasFacturado,
         Long proyeccionUnidadesMes,
         Double marketShareUnidadesPromedio,
-        Double priceGapPctPromedio
+        Double priceGapPctPromedio,
+        Double shareOfAssortmentPct
 ) {
 }

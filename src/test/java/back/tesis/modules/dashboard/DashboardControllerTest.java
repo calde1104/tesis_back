@@ -45,7 +45,7 @@ class DashboardControllerTest {
     @Test
     void getKpisReturnsOk() throws Exception {
         when(dashboardService.getKpis("emp-1", 2024, 3))
-                .thenReturn(new KpisDto(2024, 3, 500L, new BigDecimal("1000.00"), null, 0.4, 5.0));
+                .thenReturn(new KpisDto(2024, 3, 500L, new BigDecimal("1000.00"), null, 0.4, 5.0, 25.0));
 
         mockMvc.perform(get("/v1/emp-1/dashboard/kpis").param("anio", "2024").param("mes", "3"))
                 .andExpect(status().isOk())

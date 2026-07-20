@@ -15,8 +15,12 @@ public final class DashboardMapper {
     private DashboardMapper() {
     }
 
-    public static KpisDto toKpisDto(int anio, int mes, SalesSummaryDto summary, Double marketShareProm, Double priceGapProm) {
-        return new KpisDto(anio, mes, summary.totalUnidades(), summary.totalFacturado(), null, marketShareProm, priceGapProm);
+    public static KpisDto toKpisDto(
+            int anio, int mes, SalesSummaryDto summary,
+            Double marketShareProm, Double priceGapProm, Double shareOfAssortmentPct
+    ) {
+        return new KpisDto(anio, mes, summary.totalUnidades(), summary.totalFacturado(),
+                null, marketShareProm, priceGapProm, shareOfAssortmentPct);
     }
 
     public static SalesEvolutionPointDto toSalesEvolutionDto(MonthlyRevenueDto point) {

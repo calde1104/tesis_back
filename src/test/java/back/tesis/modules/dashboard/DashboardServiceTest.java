@@ -16,6 +16,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +33,8 @@ class DashboardServiceTest {
     private EmpresaRepository empresaRepository;
     @Mock
     private ContextService contextService;
+    @Mock
+    private AssortmentRepository assortmentRepository;
 
     @Test
     void getKpisCombinesSalesAndMarketShareWithNullForecast() {
@@ -39,7 +43,7 @@ class DashboardServiceTest {
         when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of());
 
         DashboardService service = new DashboardService(
-                salesService, marketShareService, compositionRepository, empresaRepository, contextService);
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
         var result = service.getKpis("emp-1", 2024, 3);
 
@@ -58,7 +62,7 @@ class DashboardServiceTest {
         ));
 
         DashboardService service = new DashboardService(
-                salesService, marketShareService, compositionRepository, empresaRepository, contextService);
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
         var result = service.getKpis("emp-1", 2024, 3);
 
@@ -75,11 +79,45 @@ class DashboardServiceTest {
         ));
 
         DashboardService service = new DashboardService(
-                salesService, marketShareService, compositionRepository, empresaRepository, contextService);
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
         var result = service.getKpis("emp-1", 2024, 3);
 
         assertThat(result.priceGapPctPromedio()).isNull();
+    }
+
+    @Test
+    void getKpisCalculatesShareOfAssortmentFromActiveProductsAndMarketTotal() {
+        when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
+        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
+        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of());
+        when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt()))
+                .thenReturn(List.of("prod-1", "prod-2"));
+        when(assortmentRepository.findCategoriaIdsForProductos(List.of("prod-1", "prod-2")))
+                .thenReturn(List.of(10, 20));
+        when(assortmentRepository.countMarketProductosByCategorias(List.of(10, 20))).thenReturn(8L);
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
+
+        var result = service.getKpis("emp-1", 2024, 3);
+
+        assertThat(result.shareOfAssortmentPct()).isEqualTo(25.0);
+    }
+
+    @Test
+    void getKpisReturnsNullShareOfAssortmentWhenEmpresaHasNoActiveProducts() {
+        when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(0L, BigDecimal.ZERO));
+        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
+        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of());
+        when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt())).thenReturn(List.of());
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
+
+        var result = service.getKpis("emp-1", 2024, 3);
+
+        assertThat(result.shareOfAssortmentPct()).isNull();
     }
 
     @Test
@@ -90,7 +128,7 @@ class DashboardServiceTest {
         ));
 
         DashboardService service = new DashboardService(
-                salesService, marketShareService, compositionRepository, empresaRepository, contextService);
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
         var result = service.getSalesEvolution("emp-1");
 
