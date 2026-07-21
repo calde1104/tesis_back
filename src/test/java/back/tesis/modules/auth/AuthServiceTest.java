@@ -1,5 +1,6 @@
 package back.tesis.modules.auth;
 
+import back.tesis.common.exceptions.ConflictException;
 import back.tesis.common.exceptions.InvalidCredentialsException;
 import back.tesis.dto.auth.LoginRequest;
 import back.tesis.entities.Empresa;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +41,7 @@ class AuthServiceTest {
         Rol rol = newRol(1, "ADMIN");
         Empresa empresa = newEmpresa("emp-1", "Acme", "800123456");
 
-        when(usuarioRepository.findByEmpresaIdAndEmail("emp-1", "user@test.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByEmail("user@test.com")).thenReturn(List.of(usuario));
         when(passwordEncoder.matches("plain", "hashed")).thenReturn(true);
         when(rolRepository.findById(1)).thenReturn(Optional.of(rol));
         when(empresaRepository.findById("emp-1")).thenReturn(Optional.of(empresa));
@@ -47,7 +49,7 @@ class AuthServiceTest {
 
         AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
 
-        var response = service.login(new LoginRequest("emp-1", "user@test.com", "plain"));
+        var response = service.login(new LoginRequest("user@test.com", "plain"));
 
         assertThat(response.token()).isEqualTo("jwt-token");
         assertThat(response.rol()).isEqualTo("ADMIN");
@@ -57,23 +59,35 @@ class AuthServiceTest {
     @Test
     void loginFailsWithWrongPassword() throws Exception {
         Usuario usuario = newUsuario("emp-1", 1, "user@test.com", "hashed");
-        when(usuarioRepository.findByEmpresaIdAndEmail("emp-1", "user@test.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByEmail("user@test.com")).thenReturn(List.of(usuario));
         when(passwordEncoder.matches("wrong", "hashed")).thenReturn(false);
 
         AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
 
-        assertThatThrownBy(() -> service.login(new LoginRequest("emp-1", "user@test.com", "wrong")))
+        assertThatThrownBy(() -> service.login(new LoginRequest("user@test.com", "wrong")))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 
     @Test
-    void loginFailsWhenUserNotFoundForEmpresa() {
-        when(usuarioRepository.findByEmpresaIdAndEmail("emp-1", "nadie@test.com")).thenReturn(Optional.empty());
+    void loginFailsWhenUserNotFoundByEmail() {
+        when(usuarioRepository.findByEmail("nadie@test.com")).thenReturn(List.of());
 
         AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
 
-        assertThatThrownBy(() -> service.login(new LoginRequest("emp-1", "nadie@test.com", "x")))
+        assertThatThrownBy(() -> service.login(new LoginRequest("nadie@test.com", "x")))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void loginFailsWithConflictWhenEmailBelongsToMultipleEmpresas() throws Exception {
+        Usuario usuario1 = newUsuario("emp-1", 1, "duplicado@test.com", "hashed1");
+        Usuario usuario2 = newUsuario("emp-2", 1, "duplicado@test.com", "hashed2");
+        when(usuarioRepository.findByEmail("duplicado@test.com")).thenReturn(List.of(usuario1, usuario2));
+
+        AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
+
+        assertThatThrownBy(() -> service.login(new LoginRequest("duplicado@test.com", "cualquiera")))
+                .isInstanceOf(ConflictException.class);
     }
 
     private Usuario newUsuario(String empresaId, int rolId, String email, String hash) throws Exception {

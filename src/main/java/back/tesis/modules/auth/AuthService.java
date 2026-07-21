@@ -1,5 +1,6 @@
 package back.tesis.modules.auth;
 
+import back.tesis.common.exceptions.ConflictException;
 import back.tesis.common.exceptions.InvalidCredentialsException;
 import back.tesis.dto.auth.EmpresaResumenDto;
 import back.tesis.dto.auth.LoginRequest;
@@ -13,6 +14,7 @@ import back.tesis.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -42,7 +44,14 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmpresaIdAndEmail(request.empresaId(), request.email());
+        List<Usuario> candidatos = usuarioRepository.findByEmail(request.email());
+
+        if (candidatos.size() > 1) {
+            throw new ConflictException(
+                    "Este email esta asociado a mas de una empresa; contacta al administrador");
+        }
+
+        Optional<Usuario> usuarioOpt = candidatos.stream().findFirst();
 
         boolean credencialesValidas = usuarioOpt
                 .map(u -> passwordEncoder.matches(request.password(), u.getPasswordHash()))

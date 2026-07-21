@@ -35,7 +35,7 @@ class AuthControllerTest {
         when(authService.login(any())).thenReturn(new LoginResponse(
                 "jwt", "usr-1", "ADMIN", new EmpresaResumenDto("emp-1", "Acme", "800")));
 
-        String body = "{\"empresaId\":\"emp-1\",\"email\":\"user@test.com\",\"password\":\"secret\"}";
+        String body = "{\"email\":\"user@test.com\",\"password\":\"secret\"}";
 
         mockMvc.perform(post("/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -48,7 +48,7 @@ class AuthControllerTest {
     void loginRejectsInvalidBody() throws Exception {
         mockMvc.perform(post("/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"empresaId\":\"\",\"email\":\"no-es-email\",\"password\":\"\"}"))
+                        .content("{\"email\":\"no-es-email\",\"password\":\"\"}"))
                 .andExpect(status().isBadRequest());
     }
 }
