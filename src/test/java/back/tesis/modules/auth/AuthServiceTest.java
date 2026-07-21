@@ -19,6 +19,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,6 +78,19 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> service.login(new LoginRequest("nadie@test.com", "x")))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void loginOnNotFoundStillRunsPasswordEncoderAgainstDummyHash() {
+        String dummyHash = "$2a$10$ZHr6kd8e.5Jya9pKNccDdu5v1N6LATjajPEiHFAv6C4jq0w80fiG6";
+        when(usuarioRepository.findByEmail("nadie@test.com")).thenReturn(List.of());
+
+        AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
+
+        assertThatThrownBy(() -> service.login(new LoginRequest("nadie@test.com", "x")))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        verify(passwordEncoder).matches(eq("x"), eq(dummyHash));
     }
 
     @Test
