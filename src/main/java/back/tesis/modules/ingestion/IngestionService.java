@@ -6,6 +6,7 @@ import back.tesis.common.exceptions.ResourceNotFoundException;
 import back.tesis.dto.ingestion.IngestionHistoryItemDto;
 import back.tesis.dto.ingestion.UploadResponseDto;
 import back.tesis.entities.ArchivoIngesta;
+import back.tesis.entities.AuditoriaIntegridad;
 import back.tesis.mapper.ingestion.IngestionMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,12 +23,18 @@ public class IngestionService {
     private final ArchivoIngestaRepository repository;
     private final VentaCountRepository ventaMensualCountRepository;
     private final VentaSemanalCountRepository ventaSemanalCountRepository;
+    private final AuditoriaIntegridadRepository auditoriaIntegridadRepository;
 
-    public IngestionService(ArchivoIngestaRepository repository, VentaCountRepository ventaMensualCountRepository,
-                           VentaSemanalCountRepository ventaSemanalCountRepository) {
+    public IngestionService(
+            ArchivoIngestaRepository repository,
+            VentaCountRepository ventaMensualCountRepository,
+            VentaSemanalCountRepository ventaSemanalCountRepository,
+            AuditoriaIntegridadRepository auditoriaIntegridadRepository
+    ) {
         this.repository = repository;
         this.ventaMensualCountRepository = ventaMensualCountRepository;
         this.ventaSemanalCountRepository = ventaSemanalCountRepository;
+        this.auditoriaIntegridadRepository = auditoriaIntegridadRepository;
     }
 
     public UploadResponseDto upload(String empresaId, MultipartFile file, String granularidad,
@@ -40,6 +47,9 @@ public class IngestionService {
         ArchivoIngesta archivo = new ArchivoIngesta(
                 empresaId, file.getOriginalFilename(), hash, granularidad, periodoDesde, periodoHasta);
         ArchivoIngesta saved = repository.save(archivo);
+
+        auditoriaIntegridadRepository.save(
+                new AuditoriaIntegridad(saved.getId(), hash, AuditoriaIntegridad.RESULTADO_VALIDO));
 
         procesarAsync(saved.getId());
 
