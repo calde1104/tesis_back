@@ -1,5 +1,7 @@
 package back.tesis.config;
 
+import back.tesis.security.AccessLogInterceptor;
+import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtFilter;
 import back.tesis.security.JwtService;
 import back.tesis.security.TenantGuardInterceptor;
@@ -17,9 +19,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class SecurityConfig implements WebMvcConfigurer {
 
     private final JwtService jwtService;
+    private final AccessLogService accessLogService;
 
-    public SecurityConfig(JwtService jwtService) {
+    public SecurityConfig(JwtService jwtService, AccessLogService accessLogService) {
         this.jwtService = jwtService;
+        this.accessLogService = accessLogService;
     }
 
     @Bean
@@ -37,6 +41,7 @@ public class SecurityConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new AccessLogInterceptor(accessLogService));
         registry.addInterceptor(new TenantGuardInterceptor());
     }
 

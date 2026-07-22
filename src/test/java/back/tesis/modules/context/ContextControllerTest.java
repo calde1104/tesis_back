@@ -1,6 +1,7 @@
 package back.tesis.modules.context;
 
 import back.tesis.dto.context.MacroDto;
+import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class ContextControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private AccessLogService accessLogService;
 
     @Test
     void getMacroReturnsOkWithList() throws Exception {

@@ -1,6 +1,7 @@
 package back.tesis.modules.marketshare;
 
 import back.tesis.dto.marketshare.MarketShareOverviewPointDto;
+import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtService;
 import back.tesis.security.TenantContext;
 import org.junit.jupiter.api.AfterEach;
@@ -31,6 +32,9 @@ class MarketShareControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private AccessLogService accessLogService;
 
     @BeforeEach
     void setUp() {

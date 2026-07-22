@@ -1,6 +1,7 @@
 package back.tesis.modules.sales;
 
 import back.tesis.dto.sales.SalesSummaryDto;
+import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtService;
 import back.tesis.security.TenantContext;
 import org.junit.jupiter.api.AfterEach;
@@ -33,6 +34,9 @@ class SalesControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private AccessLogService accessLogService;
 
     @BeforeEach
     void setUp() {

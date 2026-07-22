@@ -1,6 +1,7 @@
 package back.tesis.modules.config;
 
 import back.tesis.dto.config.ConfigResponseDto;
+import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtService;
 import back.tesis.security.TenantContext;
 import org.junit.jupiter.api.AfterEach;
@@ -32,6 +33,9 @@ class ConfigControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private AccessLogService accessLogService;
 
     @BeforeEach
     void setUp() {

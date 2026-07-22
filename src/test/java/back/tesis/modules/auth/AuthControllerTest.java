@@ -2,6 +2,7 @@ package back.tesis.modules.auth;
 
 import back.tesis.dto.auth.EmpresaResumenDto;
 import back.tesis.dto.auth.LoginResponse;
+import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private AccessLogService accessLogService;
 
     @Test
     void loginReturnsTokenOnSuccess() throws Exception {
