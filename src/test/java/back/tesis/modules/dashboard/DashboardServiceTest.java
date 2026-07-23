@@ -140,4 +140,23 @@ class DashboardServiceTest {
         assertThat(result.get(1).montoFacturado()).isEqualByComparingTo("2500.50");
         assertThat(result.get(1).unidadesPronosticadas()).isNull();
     }
+
+    @Test
+    void getMarketShareCompositionPassesEmpresaIdToRepositoryToScopeByCategorias() {
+        MarketShareCompositionRepository.CompositionRow row = new MarketShareCompositionRepository.CompositionRow() {
+            public String getEmpresaId() { return "emp-1"; }
+            public Double getMarketShareUnidadesPromedio() { return 42.0; }
+        };
+        when(compositionRepository.findComposicionPorPeriodo("emp-1", 2024, 3)).thenReturn(List.of(row));
+        when(empresaRepository.findAllById(List.of("emp-1"))).thenReturn(List.of());
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
+
+        var result = service.getMarketShareComposition("emp-1", 2024, 3);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).empresaId()).isEqualTo("emp-1");
+        assertThat(result.get(0).marketShareUnidadesPromedio()).isEqualTo(42.0);
+    }
 }
