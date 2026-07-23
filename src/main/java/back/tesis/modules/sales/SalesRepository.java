@@ -85,10 +85,13 @@ public interface SalesRepository extends JpaRepository<VentaMensual, Long> {
         Integer getAnio();
         Integer getMes();
         BigDecimal getMontoFacturado();
+        Long getUnidadesVendidas();
     }
 
     @Query("""
-            SELECT v.anio AS anio, v.mes AS mes, SUM(v.montoFacturado) AS montoFacturado
+            SELECT v.anio AS anio, v.mes AS mes,
+                   SUM(v.montoFacturado) AS montoFacturado,
+                   SUM(v.unidadesVendidas) AS unidadesVendidas
             FROM VentaMensual v
             WHERE v.empresaId = :empresaId
             GROUP BY v.anio, v.mes

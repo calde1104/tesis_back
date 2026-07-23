@@ -51,7 +51,7 @@ public class SalesService {
 
     public List<MonthlyRevenueDto> getMonthlyRevenue(String empresaId) {
         return salesRepository.findMonthlyRevenue(empresaId).stream()
-                .map(row -> new MonthlyRevenueDto(row.getAnio(), row.getMes(), row.getMontoFacturado()))
+                .map(row -> new MonthlyRevenueDto(row.getAnio(), row.getMes(), row.getMontoFacturado(), row.getUnidadesVendidas()))
                 .toList();
     }
 

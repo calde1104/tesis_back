@@ -24,7 +24,7 @@ public final class DashboardMapper {
     }
 
     public static SalesEvolutionPointDto toSalesEvolutionDto(MonthlyRevenueDto point) {
-        return new SalesEvolutionPointDto(point.anio(), point.mes(), point.montoFacturado(), null);
+        return new SalesEvolutionPointDto(point.anio(), point.mes(), point.montoFacturado(), null, point.unidadesVendidas());
     }
 
     public static MarketShareCompositionDto toCompositionDto(MarketShareCompositionRepository.CompositionRow row, String empresaNombre) {

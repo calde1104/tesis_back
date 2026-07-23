@@ -6,6 +6,7 @@ public record SalesEvolutionPointDto(
         int anio,
         int mes,
         BigDecimal montoFacturado,
-        Long unidadesPronosticadas
+        Long unidadesPronosticadas,
+        Long unidadesVendidas
 ) {
 }

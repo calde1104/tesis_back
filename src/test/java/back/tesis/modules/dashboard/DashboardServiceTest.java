@@ -121,10 +121,10 @@ class DashboardServiceTest {
     }
 
     @Test
-    void getSalesEvolutionPopulatesMontoFacturadoFromRealSalesAndLeavesForecastNull() {
+    void getSalesEvolutionPopulatesMontoFacturadoAndUnidadesVendidasFromRealSalesAndLeavesForecastNull() {
         when(salesService.getMonthlyRevenue("emp-1")).thenReturn(List.of(
-                new MonthlyRevenueDto(2024, 1, new BigDecimal("1000.00")),
-                new MonthlyRevenueDto(2024, 2, new BigDecimal("2500.50"))
+                new MonthlyRevenueDto(2024, 1, new BigDecimal("1000.00"), 50L),
+                new MonthlyRevenueDto(2024, 2, new BigDecimal("2500.50"), 120L)
         ));
 
         DashboardService service = new DashboardService(
@@ -136,8 +136,10 @@ class DashboardServiceTest {
         assertThat(result.get(0).anio()).isEqualTo(2024);
         assertThat(result.get(0).mes()).isEqualTo(1);
         assertThat(result.get(0).montoFacturado()).isEqualByComparingTo("1000.00");
+        assertThat(result.get(0).unidadesVendidas()).isEqualTo(50L);
         assertThat(result.get(0).unidadesPronosticadas()).isNull();
         assertThat(result.get(1).montoFacturado()).isEqualByComparingTo("2500.50");
+        assertThat(result.get(1).unidadesVendidas()).isEqualTo(120L);
         assertThat(result.get(1).unidadesPronosticadas()).isNull();
     }
 
