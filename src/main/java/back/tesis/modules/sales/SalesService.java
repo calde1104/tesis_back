@@ -35,10 +35,10 @@ public class SalesService {
 
     public Page<SaleItemDto> listSales(
             String empresaId, List<Integer> anios, List<Integer> meses,
-            String marcaId, Integer categoriaId, Integer departamentoId,
+            String marcaId, Integer categoriaId, Integer departamentoId, String search,
             Pageable pageable
     ) {
-        return salesRepository.findSales(empresaId, anios, meses, marcaId, categoriaId, departamentoId, pageable)
+        return salesRepository.findSales(empresaId, anios, meses, marcaId, categoriaId, departamentoId, search, pageable)
                 .map(SalesMapper::toDto);
     }
 

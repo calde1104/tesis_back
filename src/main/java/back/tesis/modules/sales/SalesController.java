@@ -31,10 +31,11 @@ public class SalesController {
             @RequestParam(required = false) String marcaId,
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) Integer departamentoId,
+            @RequestParam(required = false) String search,
             Pageable pageable
     ) {
         return PaginatedResponse.of(
-                salesService.listSales(empresaId, anios, meses, marcaId, categoriaId, departamentoId, pageable));
+                salesService.listSales(empresaId, anios, meses, marcaId, categoriaId, departamentoId, search, pageable));
     }
 
     @GetMapping("/summary")

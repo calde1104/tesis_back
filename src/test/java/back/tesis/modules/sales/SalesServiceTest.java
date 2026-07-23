@@ -60,18 +60,36 @@ class SalesServiceTest {
         Page<SalesRepository.SaleRow> page = new PageImpl<>(List.of(row), pageable, 1);
         when(salesRepository.findSales(
                 eq("emp-1"), eq(List.of(2023, 2024)), eq(List.of(3, 4)),
-                isNull(), isNull(), isNull(), eq(pageable)))
+                isNull(), isNull(), isNull(), isNull(), eq(pageable)))
                 .thenReturn(page);
 
         SalesService service = new SalesService(salesRepository, marcaRepository, departamentoRepository, categoriaRepository);
 
         Page<SaleItemDto> result = service.listSales(
-                "emp-1", List.of(2023, 2024), List.of(3, 4), null, null, null, pageable);
+                "emp-1", List.of(2023, 2024), List.of(3, 4), null, null, null, null, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).sku()).isEqualTo("SKU-1");
         assertThat(result.getContent().get(0).marcaNombre()).isEqualTo("Marca X");
         assertThat(result.getContent().get(0).categoriaNombre()).isEqualTo("Bebidas");
+    }
+
+    @Test
+    void listSalesPassesSearchTermToRepository() {
+        Pageable pageable = PageRequest.of(0, 10);
+        SalesRepository.SaleRow row = mockSaleRow();
+        Page<SalesRepository.SaleRow> page = new PageImpl<>(List.of(row), pageable, 1);
+        when(salesRepository.findSales(
+                eq("emp-1"), eq(List.of(2024)), isNull(), isNull(), isNull(), isNull(), eq("whisky"), eq(pageable)))
+                .thenReturn(page);
+
+        SalesService service = new SalesService(salesRepository, marcaRepository, departamentoRepository, categoriaRepository);
+
+        Page<SaleItemDto> result = service.listSales(
+                "emp-1", List.of(2024), null, null, null, null, "whisky", pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).sku()).isEqualTo("SKU-1");
     }
 
     private SalesRepository.SaleRow mockSaleRow() {

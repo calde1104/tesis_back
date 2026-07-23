@@ -51,6 +51,11 @@ public interface SalesRepository extends JpaRepository<VentaMensual, Long> {
               AND (:departamentoId IS NULL OR v.productoId IN (
                   SELECT pv.producto.id FROM ProductoVersion pv WHERE pv.categoria.departamento.id = :departamentoId
               ))
+              AND (:search IS NULL OR :search = '' OR v.productoId IN (
+                  SELECT p.id FROM Producto p
+                  WHERE LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%'))
+                     OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
+              ))
             ORDER BY v.anio DESC, v.mes DESC
             """)
     Page<SaleRow> findSales(
@@ -60,6 +65,7 @@ public interface SalesRepository extends JpaRepository<VentaMensual, Long> {
             @Param("marcaId") String marcaId,
             @Param("categoriaId") Integer categoriaId,
             @Param("departamentoId") Integer departamentoId,
+            @Param("search") String search,
             Pageable pageable
     );
 
