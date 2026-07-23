@@ -1,6 +1,5 @@
 package back.tesis.modules.dashboard;
 
-import back.tesis.dto.marketshare.PriceGapDto;
 import back.tesis.dto.sales.MonthlyRevenueDto;
 import back.tesis.dto.sales.SalesSummaryDto;
 import back.tesis.entities.EmpresaRepository;
@@ -39,8 +38,6 @@ class DashboardServiceTest {
     @Test
     void getKpisCombinesSalesAndMarketShareWithNullForecast() {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
-        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
-        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of());
 
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
@@ -52,31 +49,24 @@ class DashboardServiceTest {
     }
 
     @Test
-    void getPriceGapPromedioExcludesNullValuesAndIncludesOnlyNonNulls() {
+    void getKpisPassesThroughMarketShareAndPriceGapPromediosScopedToRequestedPeriodo() {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
-        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
-        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of(
-                new PriceGapDto("prod-1", 10.0, 5.0, 2024, 3),
-                new PriceGapDto("prod-2", 20.0, null, 2024, 3),
-                new PriceGapDto("prod-3", 30.0, 15.0, 2024, 3)
-        ));
+        when(marketShareService.getMarketShareUnidadesPromedioPorPeriodo("emp-1", 2024, 3)).thenReturn(0.4);
+        when(marketShareService.getPriceGapPctPromedioPorPeriodo("emp-1", 2024, 3)).thenReturn(10.0);
 
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
         var result = service.getKpis("emp-1", 2024, 3);
 
+        assertThat(result.marketShareUnidadesPromedio()).isEqualTo(0.4);
         assertThat(result.priceGapPctPromedio()).isEqualTo(10.0);
     }
 
     @Test
-    void getPriceGapPromedioReturnsNullWhenAllValuesAreNull() {
+    void getKpisLeavesPriceGapPromedioNullWhenServiceReturnsNull() {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
-        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
-        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of(
-                new PriceGapDto("prod-1", 10.0, null, 2024, 3),
-                new PriceGapDto("prod-2", 20.0, null, 2024, 3)
-        ));
+        when(marketShareService.getPriceGapPctPromedioPorPeriodo("emp-1", 2024, 3)).thenReturn(null);
 
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
@@ -89,8 +79,6 @@ class DashboardServiceTest {
     @Test
     void getKpisCalculatesShareOfAssortmentFromActiveProductsAndMarketTotal() {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
-        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
-        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of());
         when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt()))
                 .thenReturn(List.of("prod-1", "prod-2"));
         when(assortmentRepository.findCategoriaIdsForProductos(List.of("prod-1", "prod-2")))
@@ -108,8 +96,6 @@ class DashboardServiceTest {
     @Test
     void getKpisReturnsNullShareOfAssortmentWhenEmpresaHasNoActiveProducts() {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(0L, BigDecimal.ZERO));
-        when(marketShareService.getOverview("emp-1")).thenReturn(List.of());
-        when(marketShareService.getPriceGap("emp-1")).thenReturn(List.of());
         when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(List.of());
 
         DashboardService service = new DashboardService(

@@ -49,16 +49,8 @@ public class DashboardService {
 
     public KpisDto getKpis(String empresaId, int anio, int mes) {
         SalesSummaryDto summary = salesService.getSummary(empresaId, anio, mes);
-        Double marketShareProm = marketShareService.getOverview(empresaId).stream()
-                .filter(p -> p.anio() == anio && p.mes() == mes)
-                .findFirst()
-                .map(p -> p.marketShareUnidadesPromedio())
-                .orElse(null);
-        Double priceGapProm = marketShareService.getPriceGap(empresaId).stream()
-                .filter(p -> p.priceGapPct() != null)
-                .mapToDouble(p -> p.priceGapPct())
-                .average()
-                .stream().boxed().findFirst().orElse(null);
+        Double marketShareProm = marketShareService.getMarketShareUnidadesPromedioPorPeriodo(empresaId, anio, mes);
+        Double priceGapProm = marketShareService.getPriceGapPctPromedioPorPeriodo(empresaId, anio, mes);
         Double shareOfAssortmentPct = calcularShareOfAssortment(empresaId, anio, mes);
         return DashboardMapper.toKpisDto(anio, mes, summary, marketShareProm, priceGapProm, shareOfAssortmentPct);
     }

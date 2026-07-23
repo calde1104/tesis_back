@@ -27,4 +27,12 @@ public class MarketShareService {
                 .map(MarketShareMapper::toDto)
                 .toList();
     }
+
+    public Double getMarketShareUnidadesPromedioPorPeriodo(String empresaId, int anio, int mes) {
+        return repository.findMarketShareUnidadesPromedioPorPeriodo(empresaId, anio, mes);
+    }
+
+    public Double getPriceGapPctPromedioPorPeriodo(String empresaId, int anio, int mes) {
+        return repository.findPriceGapPctPromedioPorPeriodo(empresaId, anio, mes);
+    }
 }

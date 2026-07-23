@@ -25,6 +25,15 @@ public interface VentaMensualMarketShareRepository extends JpaRepository<VentaMe
             """)
     List<OverviewRow> findMarketShareEvolucion(@Param("empresaId") String empresaId);
 
+    @Query("""
+            SELECT AVG(v.marketShareUnidades)
+            FROM VentaMensual v
+            WHERE v.empresaId = :empresaId AND v.anio = :anio AND v.mes = :mes
+              AND v.marketShareUnidades IS NOT NULL
+            """)
+    Double findMarketShareUnidadesPromedioPorPeriodo(
+            @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes);
+
     interface PriceGapRow {
         String getProductoId();
         Double getPrecioUnitario();
@@ -46,4 +55,13 @@ public interface VentaMensualMarketShareRepository extends JpaRepository<VentaMe
               )
             """)
     List<PriceGapRow> findUltimoPriceGapPorProducto(@Param("empresaId") String empresaId);
+
+    @Query("""
+            SELECT AVG(v.priceGapPct)
+            FROM VentaMensual v
+            WHERE v.empresaId = :empresaId AND v.anio = :anio AND v.mes = :mes
+              AND v.priceGapPct IS NOT NULL
+            """)
+    Double findPriceGapPctPromedioPorPeriodo(
+            @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes);
 }
