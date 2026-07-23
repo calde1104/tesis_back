@@ -59,10 +59,10 @@ public class SalesService {
         var marcas = marcaRepository.findByEmpresaIdOrderByNombre(empresaId).stream()
                 .map(SalesMapper::toDto)
                 .toList();
-        var departamentos = departamentoRepository.findAllByOrderByNombre().stream()
+        var departamentos = departamentoRepository.findByEmpresaIdOrderByNombre(empresaId).stream()
                 .map(SalesMapper::toDto)
                 .toList();
-        var categorias = categoriaRepository.findAllByOrderByNombre().stream()
+        var categorias = categoriaRepository.findByEmpresaIdOrderByNombre(empresaId).stream()
                 .map(SalesMapper::toCategoryFilterOptionDto)
                 .toList();
         return new SalesFilterOptionsDto(marcas, departamentos, categorias);

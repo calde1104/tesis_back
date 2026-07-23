@@ -92,12 +92,12 @@ class SalesServiceTest {
     }
 
     @Test
-    void getFilterOptionsScopesMarcasByEmpresaAndKeepsCatalogsGlobal() throws Exception {
+    void getFilterOptionsScopesMarcasDepartamentosAndCategoriasByEmpresa() throws Exception {
         Marca marca = newMarca("emp-1", "Marca X");
         Departamento depto = newDepartamento("Bebidas");
         when(marcaRepository.findByEmpresaIdOrderByNombre("emp-1")).thenReturn(List.of(marca));
-        when(departamentoRepository.findAllByOrderByNombre()).thenReturn(List.of(depto));
-        when(categoriaRepository.findAllByOrderByNombre()).thenReturn(List.of());
+        when(departamentoRepository.findByEmpresaIdOrderByNombre("emp-1")).thenReturn(List.of(depto));
+        when(categoriaRepository.findByEmpresaIdOrderByNombre("emp-1")).thenReturn(List.of());
 
         SalesService service = new SalesService(salesRepository, marcaRepository, departamentoRepository, categoriaRepository);
 
