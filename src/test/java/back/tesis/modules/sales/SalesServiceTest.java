@@ -105,6 +105,7 @@ class SalesServiceTest {
 
         assertThat(result.marcas()).hasSize(1);
         assertThat(result.departamentos()).hasSize(1);
+        assertThat(result.categorias()).isEmpty();
     }
 
     private Marca newMarca(String empresaId, String nombre) throws Exception {
