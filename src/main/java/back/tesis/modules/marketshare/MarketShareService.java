@@ -16,14 +16,20 @@ public class MarketShareService {
         this.repository = repository;
     }
 
-    public List<MarketShareOverviewPointDto> getOverview(String empresaId) {
-        return repository.findMarketShareEvolucion(empresaId).stream()
+    public List<MarketShareOverviewPointDto> getOverview(
+            String empresaId, String marcaId, Integer categoriaId, Integer departamentoId,
+            List<Integer> anios, List<Integer> meses) {
+        return repository.findMarketShareEvolucion(empresaId, marcaId, categoriaId, departamentoId, anios, meses)
+                .stream()
                 .map(MarketShareMapper::toDto)
                 .toList();
     }
 
-    public List<PriceGapDto> getPriceGap(String empresaId) {
-        return repository.findUltimoPriceGapPorProducto(empresaId).stream()
+    public List<PriceGapDto> getPriceGap(
+            String empresaId, String marcaId, Integer categoriaId, Integer departamentoId,
+            List<Integer> anios, List<Integer> meses) {
+        return repository.findUltimoPriceGapPorProducto(empresaId, marcaId, categoriaId, departamentoId, anios, meses)
+                .stream()
                 .map(MarketShareMapper::toDto)
                 .toList();
     }

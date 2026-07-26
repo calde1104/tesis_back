@@ -14,7 +14,7 @@ public final class MarketShareMapper {
     }
 
     public static PriceGapDto toDto(VentaMensualMarketShareRepository.PriceGapRow row) {
-        return new PriceGapDto(row.getProductoId(), row.getPrecioUnitario(), row.getPriceGapPct(),
-                row.getAnio(), row.getMes());
+        return new PriceGapDto(row.getProductoId(), row.getNombreProducto(), row.getPrecioUnitario(),
+                row.getPriceGapPct(), row.getAnio(), row.getMes());
     }
 }

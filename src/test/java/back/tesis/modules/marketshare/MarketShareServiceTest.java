@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,15 +32,39 @@ class MarketShareServiceTest {
                 return 0.42;
             }
         };
-        when(repository.findMarketShareEvolucion("emp-1")).thenReturn(List.of(row));
+        when(repository.findMarketShareEvolucion("emp-1", null, null, null, null, null)).thenReturn(List.of(row));
 
         MarketShareService service = new MarketShareService(repository);
 
-        var result = service.getOverview("emp-1");
+        var result = service.getOverview("emp-1", null, null, null, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).anio()).isEqualTo(2024);
         assertThat(result.get(0).marketShareUnidadesPromedio()).isEqualTo(0.42);
+    }
+
+    @Test
+    void getOverviewPassesFiltersThroughToRepository() {
+        when(repository.findMarketShareEvolucion("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
+                .thenReturn(List.of());
+
+        MarketShareService service = new MarketShareService(repository);
+
+        service.getOverview("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
+
+        verify(repository).findMarketShareEvolucion("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
+    }
+
+    @Test
+    void getPriceGapPassesFiltersThroughToRepository() {
+        when(repository.findUltimoPriceGapPorProducto("emp-1", "marca-1", 10, 5, List.of(2023), List.of(6)))
+                .thenReturn(List.of());
+
+        MarketShareService service = new MarketShareService(repository);
+
+        service.getPriceGap("emp-1", "marca-1", 10, 5, List.of(2023), List.of(6));
+
+        verify(repository).findUltimoPriceGapPorProducto("emp-1", "marca-1", 10, 5, List.of(2023), List.of(6));
     }
 
     @Test

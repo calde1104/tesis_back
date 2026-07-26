@@ -48,11 +48,25 @@ class MarketShareControllerTest {
 
     @Test
     void getOverviewReturnsOkWithSeries() throws Exception {
-        when(marketShareService.getOverview("emp-1")).thenReturn(
+        when(marketShareService.getOverview("emp-1", null, null, null, null, null)).thenReturn(
                 List.of(new MarketShareOverviewPointDto(2024, 1, 0.35)));
 
         mockMvc.perform(get("/v1/emp-1/market-share/overview"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].marketShareUnidadesPromedio").value(0.35));
+    }
+
+    @Test
+    void getOverviewPassesQueryParamsAsFilters() throws Exception {
+        when(marketShareService.getOverview("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/v1/emp-1/market-share/overview")
+                        .param("marcaId", "marca-1")
+                        .param("categoriaId", "10")
+                        .param("departamentoId", "5")
+                        .param("anios", "2023", "2024")
+                        .param("meses", "1", "2"))
+                .andExpect(status().isOk());
     }
 }
