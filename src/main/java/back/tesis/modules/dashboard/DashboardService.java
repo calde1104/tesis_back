@@ -87,9 +87,10 @@ public class DashboardService {
                 .toList();
     }
 
-    public List<MarketShareCompositionDto> getMarketShareComposition(String empresaId, int anio, int mes) {
+    public List<MarketShareCompositionDto> getMarketShareComposition(
+            String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
         List<MarketShareCompositionRepository.CompositionRow> rows =
-                compositionRepository.findComposicionPorPeriodo(empresaId, anio, mes);
+                compositionRepository.findComposicionPorPeriodo(empresaId, anio, mes, marcaId, categoriaId, departamentoId);
 
         List<String> empresaIds = rows.stream()
                 .map(MarketShareCompositionRepository.CompositionRow::getEmpresaId)

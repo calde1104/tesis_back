@@ -34,8 +34,11 @@ public class DashboardController {
 
     @GetMapping("/market-share-composition")
     public List<MarketShareCompositionDto> getMarketShareComposition(
-            @PathVariable String empresaId, @RequestParam int anio, @RequestParam int mes) {
-        return dashboardService.getMarketShareComposition(empresaId, anio, mes);
+            @PathVariable String empresaId, @RequestParam int anio, @RequestParam int mes,
+            @RequestParam(required = false) String marcaId,
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) Integer departamentoId) {
+        return dashboardService.getMarketShareComposition(empresaId, anio, mes, marcaId, categoriaId, departamentoId);
     }
 
     @GetMapping("/context-variables")

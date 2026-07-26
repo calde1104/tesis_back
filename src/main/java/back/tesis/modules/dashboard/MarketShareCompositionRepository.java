@@ -31,9 +31,20 @@ public interface MarketShareCompositionRepository extends JpaRepository<VentaMen
                           )
                     )
               )
+              AND (:marcaId IS NULL OR v.productoId IN (
+                  SELECT p.id FROM Producto p WHERE p.marcaId = :marcaId
+              ))
+              AND (:categoriaId IS NULL OR v.productoId IN (
+                  SELECT pv3.producto.id FROM ProductoVersion pv3 WHERE pv3.categoria.id = :categoriaId
+              ))
+              AND (:departamentoId IS NULL OR v.productoId IN (
+                  SELECT pv4.producto.id FROM ProductoVersion pv4 WHERE pv4.categoria.departamento.id = :departamentoId
+              ))
             GROUP BY v.empresaId
             ORDER BY marketShareUnidadesPromedio DESC
             """)
     List<CompositionRow> findComposicionPorPeriodo(
-            @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes);
+            @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes,
+            @Param("marcaId") String marcaId, @Param("categoriaId") Integer categoriaId,
+            @Param("departamentoId") Integer departamentoId);
 }

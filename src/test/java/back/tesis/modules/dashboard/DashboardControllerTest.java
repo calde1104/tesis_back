@@ -1,6 +1,7 @@
 package back.tesis.modules.dashboard;
 
 import back.tesis.dto.dashboard.KpisDto;
+import back.tesis.dto.dashboard.MarketShareCompositionDto;
 import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtService;
 import back.tesis.security.TenantContext;
@@ -14,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -54,5 +56,19 @@ class DashboardControllerTest {
         mockMvc.perform(get("/v1/emp-1/dashboard/kpis").param("anio", "2024").param("mes", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ventasUnidades").value(500));
+    }
+
+    @Test
+    void getMarketShareCompositionPassesQueryParamsAsFilters() throws Exception {
+        when(dashboardService.getMarketShareComposition("emp-1", 2024, 3, "marca-1", 10, 5))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/v1/emp-1/dashboard/market-share-composition")
+                        .param("anio", "2024")
+                        .param("mes", "3")
+                        .param("marcaId", "marca-1")
+                        .param("categoriaId", "10")
+                        .param("departamentoId", "5"))
+                .andExpect(status().isOk());
     }
 }

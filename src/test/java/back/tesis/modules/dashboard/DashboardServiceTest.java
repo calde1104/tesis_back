@@ -17,6 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -135,16 +136,31 @@ class DashboardServiceTest {
             public String getEmpresaId() { return "emp-1"; }
             public Double getMarketShareUnidadesPromedio() { return 42.0; }
         };
-        when(compositionRepository.findComposicionPorPeriodo("emp-1", 2024, 3)).thenReturn(List.of(row));
+        when(compositionRepository.findComposicionPorPeriodo("emp-1", 2024, 3, null, null, null))
+                .thenReturn(List.of(row));
         when(empresaRepository.findAllById(List.of("emp-1"))).thenReturn(List.of());
 
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
-        var result = service.getMarketShareComposition("emp-1", 2024, 3);
+        var result = service.getMarketShareComposition("emp-1", 2024, 3, null, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).empresaId()).isEqualTo("emp-1");
         assertThat(result.get(0).marketShareUnidadesPromedio()).isEqualTo(42.0);
+    }
+
+    @Test
+    void getMarketShareCompositionPassesFiltersThroughToRepository() {
+        when(compositionRepository.findComposicionPorPeriodo("emp-1", 2024, 3, "marca-1", 10, 5))
+                .thenReturn(List.of());
+        when(empresaRepository.findAllById(List.of())).thenReturn(List.of());
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
+
+        service.getMarketShareComposition("emp-1", 2024, 3, "marca-1", 10, 5);
+
+        verify(compositionRepository).findComposicionPorPeriodo("emp-1", 2024, 3, "marca-1", 10, 5);
     }
 }
