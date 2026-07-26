@@ -82,6 +82,8 @@ public interface VentaMensualMarketShareRepository extends JpaRepository<VentaMe
               AND v.id IN (
                   SELECT MAX(v2.id) FROM VentaMensual v2
                   WHERE v2.empresaId = :empresaId AND v2.priceGapPct IS NOT NULL
+                    AND (:anios IS NULL OR v2.anio IN :anios)
+                    AND (:meses IS NULL OR v2.mes IN :meses)
                   GROUP BY v2.productoId
               )
             """)
