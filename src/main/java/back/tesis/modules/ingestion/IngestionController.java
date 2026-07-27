@@ -29,11 +29,11 @@ public class IngestionController {
 
     @PostMapping("/upload")
     public UploadResponseDto upload(
-            @PathVariable String empresaId,
-            @RequestParam MultipartFile file,
-            @RequestParam String granularidad,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodoDesde,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodoHasta
+            @PathVariable("empresaId") String empresaId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("granularidad") String granularidad,
+            @RequestParam("periodoDesde") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodoDesde,
+            @RequestParam("periodoHasta") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodoHasta
     ) {
         return ingestionService.upload(empresaId, file, granularidad, periodoDesde, periodoHasta);
     }
