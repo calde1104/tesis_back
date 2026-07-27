@@ -17,6 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,7 +81,8 @@ class DashboardServiceTest {
     @Test
     void getKpisCalculatesShareOfAssortmentFromActiveProductsAndMarketTotal() {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(500L, new BigDecimal("12345.00")));
-        when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt()))
+        when(assortmentRepository.findActiveProductoIds(
+                eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), isNull(), isNull(), isNull()))
                 .thenReturn(List.of("prod-1", "prod-2"));
         when(assortmentRepository.findCategoriaIdsForProductos(List.of("prod-1", "prod-2")))
                 .thenReturn(List.of(10, 20));
@@ -97,7 +99,8 @@ class DashboardServiceTest {
     @Test
     void getKpisReturnsNullShareOfAssortmentWhenEmpresaHasNoActiveProducts() {
         when(salesService.getSummary("emp-1", 2024, 3)).thenReturn(new SalesSummaryDto(0L, BigDecimal.ZERO));
-        when(assortmentRepository.findActiveProductoIds(eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(List.of());
+        when(assortmentRepository.findActiveProductoIds(
+                eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), isNull(), isNull(), isNull())).thenReturn(List.of());
 
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
@@ -162,5 +165,40 @@ class DashboardServiceTest {
         service.getMarketShareComposition("emp-1", 2024, 3, "marca-1", 10, 5);
 
         verify(compositionRepository).findComposicionPorPeriodo("emp-1", 2024, 3, "marca-1", 10, 5);
+    }
+
+    @Test
+    void getShareOfAssortmentPassesFiltersThroughToRepositoryAndComputesPct() {
+        when(assortmentRepository.findActiveProductoIds(
+                eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), eq("marca-1"), eq(10), eq(5)))
+                .thenReturn(List.of("prod-1"));
+        when(assortmentRepository.findCategoriaIdsForProductos(List.of("prod-1"))).thenReturn(List.of(10));
+        when(assortmentRepository.countMarketProductosByCategorias(List.of(10))).thenReturn(4L);
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
+
+        var result = service.getShareOfAssortment("emp-1", 2024, 3, "marca-1", 10, 5);
+
+        assertThat(result.empresaId()).isEqualTo("emp-1");
+        assertThat(result.anio()).isEqualTo(2024);
+        assertThat(result.mes()).isEqualTo(3);
+        assertThat(result.shareOfAssortmentPct()).isEqualTo(25.0);
+        verify(assortmentRepository).findActiveProductoIds(
+                eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), eq("marca-1"), eq(10), eq(5));
+    }
+
+    @Test
+    void getShareOfAssortmentReturnsNullPctWhenEmpresaHasNoActiveProducts() {
+        when(assortmentRepository.findActiveProductoIds(
+                eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), isNull(), isNull(), isNull()))
+                .thenReturn(List.of());
+
+        DashboardService service = new DashboardService(
+                salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
+
+        var result = service.getShareOfAssortment("emp-1", 2024, 3, null, null, null);
+
+        assertThat(result.shareOfAssortmentPct()).isNull();
     }
 }

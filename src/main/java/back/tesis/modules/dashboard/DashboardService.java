@@ -6,6 +6,7 @@ import back.tesis.dto.dashboard.ContextVariablesDto;
 import back.tesis.dto.dashboard.KpisDto;
 import back.tesis.dto.dashboard.MarketShareCompositionDto;
 import back.tesis.dto.dashboard.SalesEvolutionPointDto;
+import back.tesis.dto.dashboard.ShareOfAssortmentDto;
 import back.tesis.dto.sales.SalesSummaryDto;
 import back.tesis.entities.Empresa;
 import back.tesis.entities.EmpresaRepository;
@@ -51,11 +52,18 @@ public class DashboardService {
         SalesSummaryDto summary = salesService.getSummary(empresaId, anio, mes);
         Double marketShareProm = marketShareService.getMarketShareUnidadesPromedioPorPeriodo(empresaId, anio, mes);
         Double priceGapProm = marketShareService.getPriceGapPctPromedioPorPeriodo(empresaId, anio, mes);
-        Double shareOfAssortmentPct = calcularShareOfAssortment(empresaId, anio, mes);
+        Double shareOfAssortmentPct = calcularShareOfAssortment(empresaId, anio, mes, null, null, null);
         return DashboardMapper.toKpisDto(anio, mes, summary, marketShareProm, priceGapProm, shareOfAssortmentPct);
     }
 
-    private Double calcularShareOfAssortment(String empresaId, int anio, int mes) {
+    public ShareOfAssortmentDto getShareOfAssortment(
+            String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
+        Double pct = calcularShareOfAssortment(empresaId, anio, mes, marcaId, categoriaId, departamentoId);
+        return new ShareOfAssortmentDto(empresaId, anio, mes, pct);
+    }
+
+    private Double calcularShareOfAssortment(
+            String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
         int cutoffAnio = anio;
         int cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
         if (cutoffMes <= 0) {
@@ -63,7 +71,8 @@ public class DashboardService {
             cutoffMes += 12;
         }
 
-        List<String> productosActivos = assortmentRepository.findActiveProductoIds(empresaId, cutoffAnio, cutoffMes, anio, mes);
+        List<String> productosActivos = assortmentRepository.findActiveProductoIds(
+                empresaId, cutoffAnio, cutoffMes, anio, mes, marcaId, categoriaId, departamentoId);
         if (productosActivos.isEmpty()) {
             return null;
         }

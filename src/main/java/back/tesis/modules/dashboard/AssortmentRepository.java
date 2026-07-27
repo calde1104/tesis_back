@@ -15,13 +15,25 @@ public interface AssortmentRepository extends JpaRepository<VentaMensual, Long> 
             WHERE v.empresaId = :empresaId
               AND (v.anio > :cutoffAnio OR (v.anio = :cutoffAnio AND v.mes >= :cutoffMes))
               AND (v.anio < :anio OR (v.anio = :anio AND v.mes <= :mes))
+              AND (:marcaId IS NULL OR v.productoId IN (
+                  SELECT p.id FROM Producto p WHERE p.marcaId = :marcaId
+              ))
+              AND (:categoriaId IS NULL OR v.productoId IN (
+                  SELECT pv.producto.id FROM ProductoVersion pv WHERE pv.categoria.id = :categoriaId
+              ))
+              AND (:departamentoId IS NULL OR v.productoId IN (
+                  SELECT pv.producto.id FROM ProductoVersion pv WHERE pv.categoria.departamento.id = :departamentoId
+              ))
             """)
     List<String> findActiveProductoIds(
             @Param("empresaId") String empresaId,
             @Param("cutoffAnio") int cutoffAnio,
             @Param("cutoffMes") int cutoffMes,
             @Param("anio") int anio,
-            @Param("mes") int mes
+            @Param("mes") int mes,
+            @Param("marcaId") String marcaId,
+            @Param("categoriaId") Integer categoriaId,
+            @Param("departamentoId") Integer departamentoId
     );
 
     @Query("""
