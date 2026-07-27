@@ -16,7 +16,8 @@ public class ConfigService {
     }
 
     public ConfigResponseDto setParametro(String empresaId, SetConfigRequest request) {
-        ConfigSistema entity = repository.findByEmpresaIdAndParametro(empresaId, request.parametro())
+        ConfigSistema entity = repository
+                .findByEmpresaIdAndProductoIdAndParametro(empresaId, request.productoId(), request.parametro())
                 .orElseGet(() -> new ConfigSistema(empresaId, request.productoId(), request.parametro(), request.valor()));
 
         entity.setValor(request.valor());
