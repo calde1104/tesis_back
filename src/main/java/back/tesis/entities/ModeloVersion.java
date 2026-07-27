@@ -52,6 +52,18 @@ public class ModeloVersion extends UuidEntity {
         return version;
     }
 
+    public LocalDateTime getFechaEntrenamiento() {
+        return fechaEntrenamiento;
+    }
+
+    public LocalDate getPeriodoDatosDesde() {
+        return periodoDatosDesde;
+    }
+
+    public LocalDate getPeriodoDatosHasta() {
+        return periodoDatosHasta;
+    }
+
     public float getMae() {
         return mae;
     }
