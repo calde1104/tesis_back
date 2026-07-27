@@ -45,6 +45,7 @@ public class LogAcceso extends UuidEntity {
         this.endpoint = endpoint;
         this.ipOrigen = ipOrigen;
         this.resultado = resultado;
+        this.fecha = LocalDateTime.now();
     }
 
     public String getUsuarioId() {

@@ -34,6 +34,7 @@ public class AuditoriaIntegridad extends UuidEntity {
         this.archivoId = archivoId;
         this.hashSha256 = hashSha256;
         this.resultadoValidacion = resultadoValidacion;
+        this.fechaSello = LocalDateTime.now();
     }
 
     public String getArchivoId() {

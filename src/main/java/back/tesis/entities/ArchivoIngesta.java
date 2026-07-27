@@ -53,6 +53,7 @@ public class ArchivoIngesta extends UuidEntity {
         this.granularidad = granularidad;
         this.periodoDesde = periodoDesde;
         this.periodoHasta = periodoHasta;
+        this.fechaRecepcion = LocalDateTime.now();
     }
 
     public String getEmpresaId() {
