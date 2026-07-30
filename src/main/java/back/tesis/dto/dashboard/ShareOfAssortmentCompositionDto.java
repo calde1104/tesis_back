@@ -1,9 +1,8 @@
 package back.tesis.dto.dashboard;
 
-public record ShareOfAssortmentDto(
+public record ShareOfAssortmentCompositionDto(
         String empresaId,
-        int anio,
-        int mes,
+        String empresaNombre,
         Double shareOfAssortmentPct
 ) {
 }

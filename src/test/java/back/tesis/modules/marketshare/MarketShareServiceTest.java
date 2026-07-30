@@ -18,21 +18,11 @@ class MarketShareServiceTest {
     private VentaMensualMarketShareRepository repository;
 
     @Test
-    void getOverviewMapsRepositoryRowsToDto() {
-        VentaMensualMarketShareRepository.OverviewRow row = new VentaMensualMarketShareRepository.OverviewRow() {
-            public int getAnio() {
-                return 2024;
-            }
-
-            public int getMes() {
-                return 3;
-            }
-
-            public Double getMarketShareUnidadesPromedio() {
-                return 0.42;
-            }
-        };
-        when(repository.findMarketShareEvolucion("emp-1", null, null, null, null, null)).thenReturn(List.of(row));
+    void getOverviewComputesPesoRealDividiendoUnidadesEmpresaSobreMercado() {
+        when(repository.findUnidadesEmpresaPorPeriodo("emp-1", null, null, null, null, null))
+                .thenReturn(List.of(periodoRow(2024, 3, 25L)));
+        when(repository.findUnidadesMercadoPorPeriodo(null, null, null, null, null))
+                .thenReturn(List.of(periodoRow(2024, 3, 100L)));
 
         MarketShareService service = new MarketShareService(repository);
 
@@ -40,19 +30,36 @@ class MarketShareServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).anio()).isEqualTo(2024);
-        assertThat(result.get(0).marketShareUnidadesPromedio()).isEqualTo(0.42);
+        assertThat(result.get(0).marketShareUnidadesPromedio()).isEqualTo(25.0);
+    }
+
+    @Test
+    void getOverviewReturnsNullPctWhenMercadoDataMissingForThatPeriodo() {
+        when(repository.findUnidadesEmpresaPorPeriodo("emp-1", null, null, null, null, null))
+                .thenReturn(List.of(periodoRow(2024, 3, 25L)));
+        when(repository.findUnidadesMercadoPorPeriodo(null, null, null, null, null))
+                .thenReturn(List.of());
+
+        MarketShareService service = new MarketShareService(repository);
+
+        var result = service.getOverview("emp-1", null, null, null, null, null);
+
+        assertThat(result.get(0).marketShareUnidadesPromedio()).isNull();
     }
 
     @Test
     void getOverviewPassesFiltersThroughToRepository() {
-        when(repository.findMarketShareEvolucion("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
+        when(repository.findUnidadesEmpresaPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
+                .thenReturn(List.of());
+        when(repository.findUnidadesMercadoPorPeriodo("marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
                 .thenReturn(List.of());
 
         MarketShareService service = new MarketShareService(repository);
 
         service.getOverview("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
 
-        verify(repository).findMarketShareEvolucion("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
+        verify(repository).findUnidadesEmpresaPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
+        verify(repository).findUnidadesMercadoPorPeriodo("marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
     }
 
     @Test
@@ -68,12 +75,23 @@ class MarketShareServiceTest {
     }
 
     @Test
-    void getMarketShareUnidadesPromedioPorPeriodoDelegatesToRepository() {
-        when(repository.findMarketShareUnidadesPromedioPorPeriodo("emp-1", 2024, 3)).thenReturn(0.42);
+    void getMarketShareUnidadesPromedioPorPeriodoComputesPesoReal() {
+        when(repository.sumUnidadesEmpresaPorPeriodo("emp-1", 2024, 3)).thenReturn(25L);
+        when(repository.sumUnidadesMercadoPorPeriodo(2024, 3)).thenReturn(100L);
 
         MarketShareService service = new MarketShareService(repository);
 
-        assertThat(service.getMarketShareUnidadesPromedioPorPeriodo("emp-1", 2024, 3)).isEqualTo(0.42);
+        assertThat(service.getMarketShareUnidadesPromedioPorPeriodo("emp-1", 2024, 3)).isEqualTo(25.0);
+    }
+
+    @Test
+    void getMarketShareUnidadesPromedioPorPeriodoReturnsNullWithoutMercadoData() {
+        when(repository.sumUnidadesEmpresaPorPeriodo("emp-1", 2024, 3)).thenReturn(25L);
+        when(repository.sumUnidadesMercadoPorPeriodo(2024, 3)).thenReturn(null);
+
+        MarketShareService service = new MarketShareService(repository);
+
+        assertThat(service.getMarketShareUnidadesPromedioPorPeriodo("emp-1", 2024, 3)).isNull();
     }
 
     @Test
@@ -83,5 +101,21 @@ class MarketShareServiceTest {
         MarketShareService service = new MarketShareService(repository);
 
         assertThat(service.getPriceGapPctPromedioPorPeriodo("emp-1", 2024, 3)).isEqualTo(10.0);
+    }
+
+    private static VentaMensualMarketShareRepository.PeriodoUnidadesRow periodoRow(int anio, int mes, long totalUnidades) {
+        return new VentaMensualMarketShareRepository.PeriodoUnidadesRow() {
+            public int getAnio() {
+                return anio;
+            }
+
+            public int getMes() {
+                return mes;
+            }
+
+            public Long getTotalUnidades() {
+                return totalUnidades;
+            }
+        };
     }
 }

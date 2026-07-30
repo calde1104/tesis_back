@@ -11,13 +11,13 @@ public interface MarketShareCompositionRepository extends JpaRepository<VentaMen
 
     interface CompositionRow {
         String getEmpresaId();
-        Double getMarketShareUnidadesPromedio();
+        Long getTotalUnidades();
     }
 
     @Query("""
-            SELECT v.empresaId AS empresaId, AVG(v.marketShareUnidades) AS marketShareUnidadesPromedio
+            SELECT v.empresaId AS empresaId, SUM(v.unidadesVendidas) AS totalUnidades
             FROM VentaMensual v
-            WHERE v.anio = :anio AND v.mes = :mes AND v.marketShareUnidades IS NOT NULL
+            WHERE v.anio = :anio AND v.mes = :mes
               AND v.productoId IN (
                   SELECT pv.producto.id FROM ProductoVersion pv
                   WHERE pv.vigenciaHasta IS NULL
@@ -41,7 +41,7 @@ public interface MarketShareCompositionRepository extends JpaRepository<VentaMen
                   SELECT pv4.producto.id FROM ProductoVersion pv4 WHERE pv4.categoria.departamento.id = :departamentoId
               ))
             GROUP BY v.empresaId
-            ORDER BY marketShareUnidadesPromedio DESC
+            ORDER BY totalUnidades DESC
             """)
     List<CompositionRow> findComposicionPorPeriodo(
             @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes,

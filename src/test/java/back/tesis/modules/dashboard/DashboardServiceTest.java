@@ -135,22 +135,28 @@ class DashboardServiceTest {
 
     @Test
     void getMarketShareCompositionPassesEmpresaIdToRepositoryToScopeByCategorias() {
-        MarketShareCompositionRepository.CompositionRow row = new MarketShareCompositionRepository.CompositionRow() {
-            public String getEmpresaId() { return "emp-1"; }
-            public Double getMarketShareUnidadesPromedio() { return 42.0; }
-        };
+        MarketShareCompositionRepository.CompositionRow row1 = compositionRow("emp-1", 25L);
+        MarketShareCompositionRepository.CompositionRow row2 = compositionRow("emp-2", 75L);
         when(compositionRepository.findComposicionPorPeriodo("emp-1", 2024, 3, null, null, null))
-                .thenReturn(List.of(row));
-        when(empresaRepository.findAllById(List.of("emp-1"))).thenReturn(List.of());
+                .thenReturn(List.of(row1, row2));
+        when(empresaRepository.findAllById(List.of("emp-1", "emp-2"))).thenReturn(List.of());
 
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
         var result = service.getMarketShareComposition("emp-1", 2024, 3, null, null, null);
 
-        assertThat(result).hasSize(1);
+        assertThat(result).hasSize(2);
         assertThat(result.get(0).empresaId()).isEqualTo("emp-1");
-        assertThat(result.get(0).marketShareUnidadesPromedio()).isEqualTo(42.0);
+        assertThat(result.get(0).marketShareUnidadesPromedio()).isEqualTo(25.0);
+        assertThat(result.get(1).marketShareUnidadesPromedio()).isEqualTo(75.0);
+    }
+
+    private static MarketShareCompositionRepository.CompositionRow compositionRow(String empresaId, long totalUnidades) {
+        return new MarketShareCompositionRepository.CompositionRow() {
+            public String getEmpresaId() { return empresaId; }
+            public Long getTotalUnidades() { return totalUnidades; }
+        };
     }
 
     @Test
@@ -168,28 +174,33 @@ class DashboardServiceTest {
     }
 
     @Test
-    void getShareOfAssortmentPassesFiltersThroughToRepositoryAndComputesPct() {
+    void getShareOfAssortmentRankingPassesFiltersThroughToRepositoryAndComputesPctForAllEmpresas() {
         when(assortmentRepository.findActiveProductoIds(
                 eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), eq("marca-1"), eq(10), eq(5)))
                 .thenReturn(List.of("prod-1"));
         when(assortmentRepository.findCategoriaIdsForProductos(List.of("prod-1"))).thenReturn(List.of(10));
         when(assortmentRepository.countMarketProductosByCategorias(List.of(10))).thenReturn(4L);
+        when(assortmentRepository.countActiveProductosPorEmpresa(
+                anyInt(), anyInt(), anyInt(), anyInt(), eq(List.of(10)), eq("marca-1"), eq(5)))
+                .thenReturn(List.of(empresaProductoCountRow("emp-1", 1L), empresaProductoCountRow("emp-2", 3L)));
+        when(empresaRepository.findAllById(List.of("emp-1", "emp-2"))).thenReturn(List.of());
 
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
-        var result = service.getShareOfAssortment("emp-1", 2024, 3, "marca-1", 10, 5);
+        var result = service.getShareOfAssortmentRanking("emp-1", 2024, 3, "marca-1", 10, 5);
 
-        assertThat(result.empresaId()).isEqualTo("emp-1");
-        assertThat(result.anio()).isEqualTo(2024);
-        assertThat(result.mes()).isEqualTo(3);
-        assertThat(result.shareOfAssortmentPct()).isEqualTo(25.0);
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).empresaId()).isEqualTo("emp-2");
+        assertThat(result.get(0).shareOfAssortmentPct()).isEqualTo(75.0);
+        assertThat(result.get(1).empresaId()).isEqualTo("emp-1");
+        assertThat(result.get(1).shareOfAssortmentPct()).isEqualTo(25.0);
         verify(assortmentRepository).findActiveProductoIds(
                 eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), eq("marca-1"), eq(10), eq(5));
     }
 
     @Test
-    void getShareOfAssortmentReturnsNullPctWhenEmpresaHasNoActiveProducts() {
+    void getShareOfAssortmentRankingReturnsEmptyWhenEmpresaHasNoActiveProducts() {
         when(assortmentRepository.findActiveProductoIds(
                 eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), isNull(), isNull(), isNull()))
                 .thenReturn(List.of());
@@ -197,8 +208,15 @@ class DashboardServiceTest {
         DashboardService service = new DashboardService(
                 salesService, marketShareService, compositionRepository, empresaRepository, contextService, assortmentRepository);
 
-        var result = service.getShareOfAssortment("emp-1", 2024, 3, null, null, null);
+        var result = service.getShareOfAssortmentRanking("emp-1", 2024, 3, null, null, null);
 
-        assertThat(result.shareOfAssortmentPct()).isNull();
+        assertThat(result).isEmpty();
+    }
+
+    private static AssortmentRepository.EmpresaProductoCountRow empresaProductoCountRow(String empresaId, long totalProductos) {
+        return new AssortmentRepository.EmpresaProductoCountRow() {
+            public String getEmpresaId() { return empresaId; }
+            public Long getTotalProductos() { return totalProductos; }
+        };
     }
 }

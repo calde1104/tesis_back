@@ -6,7 +6,7 @@ import back.tesis.dto.dashboard.ContextVariablesDto;
 import back.tesis.dto.dashboard.KpisDto;
 import back.tesis.dto.dashboard.MarketShareCompositionDto;
 import back.tesis.dto.dashboard.SalesEvolutionPointDto;
-import back.tesis.dto.dashboard.ShareOfAssortmentDto;
+import back.tesis.dto.dashboard.ShareOfAssortmentCompositionDto;
 import back.tesis.dto.sales.SalesSummaryDto;
 import back.tesis.entities.Empresa;
 import back.tesis.entities.EmpresaRepository;
@@ -16,6 +16,7 @@ import back.tesis.modules.marketshare.MarketShareService;
 import back.tesis.modules.sales.SalesService;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,10 +57,46 @@ public class DashboardService {
         return DashboardMapper.toKpisDto(anio, mes, summary, marketShareProm, priceGapProm, shareOfAssortmentPct);
     }
 
-    public ShareOfAssortmentDto getShareOfAssortment(
+    public List<ShareOfAssortmentCompositionDto> getShareOfAssortmentRanking(
             String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
-        Double pct = calcularShareOfAssortment(empresaId, anio, mes, marcaId, categoriaId, departamentoId);
-        return new ShareOfAssortmentDto(empresaId, anio, mes, pct);
+        int cutoffAnio = anio;
+        int cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
+        if (cutoffMes <= 0) {
+            cutoffAnio -= 1;
+            cutoffMes += 12;
+        }
+
+        List<String> productosActivosPropios = assortmentRepository.findActiveProductoIds(
+                empresaId, cutoffAnio, cutoffMes, anio, mes, marcaId, categoriaId, departamentoId);
+        if (productosActivosPropios.isEmpty()) {
+            return List.of();
+        }
+
+        List<Integer> categoriaIds = assortmentRepository.findCategoriaIdsForProductos(productosActivosPropios);
+        if (categoriaIds.isEmpty()) {
+            return List.of();
+        }
+
+        long totalMercado = assortmentRepository.countMarketProductosByCategorias(categoriaIds);
+        if (totalMercado == 0) {
+            return List.of();
+        }
+
+        List<AssortmentRepository.EmpresaProductoCountRow> rows = assortmentRepository.countActiveProductosPorEmpresa(
+                cutoffAnio, cutoffMes, anio, mes, categoriaIds, marcaId, departamentoId);
+
+        List<String> empresaIds = rows.stream().map(AssortmentRepository.EmpresaProductoCountRow::getEmpresaId).toList();
+        Map<String, String> nombresPorEmpresa = empresaRepository.findAllById(empresaIds).stream()
+                .collect(Collectors.toMap(Empresa::getId, Empresa::getNombre));
+
+        return rows.stream()
+                .map(row -> new ShareOfAssortmentCompositionDto(
+                        row.getEmpresaId(),
+                        nombresPorEmpresa.getOrDefault(row.getEmpresaId(), "(desconocida)"),
+                        100.0 * row.getTotalProductos() / totalMercado))
+                .sorted(Comparator.comparing(
+                        ShareOfAssortmentCompositionDto::shareOfAssortmentPct, Comparator.reverseOrder()))
+                .toList();
     }
 
     private Double calcularShareOfAssortment(
@@ -108,9 +145,13 @@ public class DashboardService {
         Map<String, String> nombresPorEmpresa = empresaRepository.findAllById(empresaIds).stream()
                 .collect(Collectors.toMap(Empresa::getId, Empresa::getNombre));
 
+        long totalMercado = rows.stream().mapToLong(MarketShareCompositionRepository.CompositionRow::getTotalUnidades).sum();
+
         return rows.stream()
                 .map(row -> DashboardMapper.toCompositionDto(
-                        row, nombresPorEmpresa.getOrDefault(row.getEmpresaId(), "(desconocida)")))
+                        row.getEmpresaId(),
+                        nombresPorEmpresa.getOrDefault(row.getEmpresaId(), "(desconocida)"),
+                        totalMercado == 0 ? null : 100.0 * row.getTotalUnidades() / totalMercado))
                 .toList();
     }
 

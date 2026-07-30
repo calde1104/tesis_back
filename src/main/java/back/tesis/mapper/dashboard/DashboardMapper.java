@@ -8,7 +8,6 @@ import back.tesis.dto.dashboard.MarketShareCompositionDto;
 import back.tesis.dto.dashboard.SalesEvolutionPointDto;
 import back.tesis.dto.sales.MonthlyRevenueDto;
 import back.tesis.dto.sales.SalesSummaryDto;
-import back.tesis.modules.dashboard.MarketShareCompositionRepository;
 
 public final class DashboardMapper {
 
@@ -27,8 +26,8 @@ public final class DashboardMapper {
         return new SalesEvolutionPointDto(point.anio(), point.mes(), point.montoFacturado(), null, point.unidadesVendidas());
     }
 
-    public static MarketShareCompositionDto toCompositionDto(MarketShareCompositionRepository.CompositionRow row, String empresaNombre) {
-        return new MarketShareCompositionDto(row.getEmpresaId(), empresaNombre, row.getMarketShareUnidadesPromedio());
+    public static MarketShareCompositionDto toCompositionDto(String empresaId, String empresaNombre, Double marketShareUnidadesPct) {
+        return new MarketShareCompositionDto(empresaId, empresaNombre, marketShareUnidadesPct);
     }
 
     public static ContextVariablesDto toContextVariablesDto(MacroDto macro, CalendarioDto calendario) {

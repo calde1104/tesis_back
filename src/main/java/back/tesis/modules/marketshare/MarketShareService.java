@@ -6,6 +6,8 @@ import back.tesis.mapper.marketshare.MarketShareMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class MarketShareService {
@@ -19,10 +21,28 @@ public class MarketShareService {
     public List<MarketShareOverviewPointDto> getOverview(
             String empresaId, String marcaId, Integer categoriaId, Integer departamentoId,
             List<Integer> anios, List<Integer> meses) {
-        return repository.findMarketShareEvolucion(empresaId, marcaId, categoriaId, departamentoId, anios, meses)
-                .stream()
-                .map(MarketShareMapper::toDto)
+        List<VentaMensualMarketShareRepository.PeriodoUnidadesRow> filasEmpresa =
+                repository.findUnidadesEmpresaPorPeriodo(empresaId, marcaId, categoriaId, departamentoId, anios, meses);
+        Map<String, Long> unidadesMercadoPorPeriodo =
+                repository.findUnidadesMercadoPorPeriodo(marcaId, categoriaId, departamentoId, anios, meses)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                row -> clavePeriodo(row.getAnio(), row.getMes()),
+                                VentaMensualMarketShareRepository.PeriodoUnidadesRow::getTotalUnidades));
+
+        return filasEmpresa.stream()
+                .map(row -> {
+                    Long unidadesMercado = unidadesMercadoPorPeriodo.get(clavePeriodo(row.getAnio(), row.getMes()));
+                    Double pct = (unidadesMercado == null || unidadesMercado == 0)
+                            ? null
+                            : 100.0 * row.getTotalUnidades() / unidadesMercado;
+                    return new MarketShareOverviewPointDto(row.getAnio(), row.getMes(), pct);
+                })
                 .toList();
+    }
+
+    private static String clavePeriodo(int anio, int mes) {
+        return anio + "-" + mes;
     }
 
     public List<PriceGapDto> getPriceGap(
@@ -35,7 +55,12 @@ public class MarketShareService {
     }
 
     public Double getMarketShareUnidadesPromedioPorPeriodo(String empresaId, int anio, int mes) {
-        return repository.findMarketShareUnidadesPromedioPorPeriodo(empresaId, anio, mes);
+        Long unidadesEmpresa = repository.sumUnidadesEmpresaPorPeriodo(empresaId, anio, mes);
+        Long unidadesMercado = repository.sumUnidadesMercadoPorPeriodo(anio, mes);
+        if (unidadesEmpresa == null || unidadesMercado == null || unidadesMercado == 0) {
+            return null;
+        }
+        return 100.0 * unidadesEmpresa / unidadesMercado;
     }
 
     public Double getPriceGapPctPromedioPorPeriodo(String empresaId, int anio, int mes) {

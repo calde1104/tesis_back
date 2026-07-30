@@ -2,7 +2,7 @@ package back.tesis.modules.dashboard;
 
 import back.tesis.dto.dashboard.KpisDto;
 import back.tesis.dto.dashboard.MarketShareCompositionDto;
-import back.tesis.dto.dashboard.ShareOfAssortmentDto;
+import back.tesis.dto.dashboard.ShareOfAssortmentCompositionDto;
 import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtService;
 import back.tesis.security.TenantContext;
@@ -75,8 +75,8 @@ class DashboardControllerTest {
 
     @Test
     void getShareOfAssortmentPassesQueryParamsAsFilters() throws Exception {
-        when(dashboardService.getShareOfAssortment("emp-1", 2024, 3, "marca-1", 10, 5))
-                .thenReturn(new ShareOfAssortmentDto("emp-1", 2024, 3, 42.5));
+        when(dashboardService.getShareOfAssortmentRanking("emp-1", 2024, 3, "marca-1", 10, 5))
+                .thenReturn(List.of(new ShareOfAssortmentCompositionDto("emp-1", "Empresa 1", 42.5)));
 
         mockMvc.perform(get("/v1/emp-1/dashboard/share-of-assortment")
                         .param("anio", "2024")
@@ -85,6 +85,6 @@ class DashboardControllerTest {
                         .param("categoriaId", "10")
                         .param("departamentoId", "5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.shareOfAssortmentPct").value(42.5));
+                .andExpect(jsonPath("$[0].shareOfAssortmentPct").value(42.5));
     }
 }
