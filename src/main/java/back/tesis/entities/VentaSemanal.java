@@ -41,7 +41,46 @@ public class VentaSemanal {
     protected VentaSemanal() {
     }
 
+    public VentaSemanal(String productoId, String archivoId, String empresaId, int anio, int semana,
+                         int unidadesVendidas, BigDecimal montoFacturado) {
+        this.productoId = productoId;
+        this.archivoId = archivoId;
+        this.empresaId = empresaId;
+        this.anio = anio;
+        this.semana = semana;
+        this.unidadesVendidas = unidadesVendidas;
+        this.montoFacturado = montoFacturado;
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public String getProductoId() {
+        return productoId;
+    }
+
+    public String getArchivoId() {
+        return archivoId;
+    }
+
+    public String getEmpresaId() {
+        return empresaId;
+    }
+
+    public int getAnio() {
+        return anio;
+    }
+
+    public int getSemana() {
+        return semana;
+    }
+
+    public int getUnidadesVendidas() {
+        return unidadesVendidas;
+    }
+
+    public BigDecimal getMontoFacturado() {
+        return montoFacturado;
     }
 }

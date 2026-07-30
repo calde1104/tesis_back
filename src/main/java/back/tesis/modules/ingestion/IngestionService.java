@@ -24,22 +24,29 @@ public class IngestionService {
     private final VentaCountRepository ventaMensualCountRepository;
     private final VentaSemanalCountRepository ventaSemanalCountRepository;
     private final AuditoriaIntegridadRepository auditoriaIntegridadRepository;
+    private final IngestionFileStorage fileStorage;
+    private final IngestionProcessor processor;
 
     public IngestionService(
             ArchivoIngestaRepository repository,
             VentaCountRepository ventaMensualCountRepository,
             VentaSemanalCountRepository ventaSemanalCountRepository,
-            AuditoriaIntegridadRepository auditoriaIntegridadRepository
+            AuditoriaIntegridadRepository auditoriaIntegridadRepository,
+            IngestionFileStorage fileStorage,
+            IngestionProcessor processor
     ) {
         this.repository = repository;
         this.ventaMensualCountRepository = ventaMensualCountRepository;
         this.ventaSemanalCountRepository = ventaSemanalCountRepository;
         this.auditoriaIntegridadRepository = auditoriaIntegridadRepository;
+        this.fileStorage = fileStorage;
+        this.processor = processor;
     }
 
     public UploadResponseDto upload(String empresaId, MultipartFile file, String granularidad,
                                      LocalDate periodoDesde, LocalDate periodoHasta) {
-        String hash = sha256(file);
+        byte[] contenido = readBytes(file);
+        String hash = sha256(contenido);
         if (repository.existsByHashSha256(hash)) {
             throw new ConflictException("El archivo ya fue cargado previamente (hash duplicado)");
         }
@@ -51,12 +58,10 @@ public class IngestionService {
         auditoriaIntegridadRepository.save(
                 new AuditoriaIntegridad(saved.getId(), hash, AuditoriaIntegridad.RESULTADO_VALIDO));
 
-        procesarAsync(saved.getId());
+        fileStorage.save(saved.getId(), contenido);
+        processor.procesar(saved.getId(), empresaId, granularidad, contenido);
 
-        return IngestionMapper.toUploadResponseDto(saved, "Archivo recibido, pendiente de procesamiento");
-    }
-
-    private void procesarAsync(String archivoId) {
+        return IngestionMapper.toUploadResponseDto(saved, "Archivo recibido, procesando");
     }
 
     public Page<IngestionHistoryItemDto> getHistory(String empresaId, Pageable pageable) {
@@ -70,9 +75,10 @@ public class IngestionService {
     public UploadResponseDto resync(String empresaId, String archivoId) {
         ArchivoIngesta archivo = repository.findByIdAndEmpresaId(archivoId, empresaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Archivo de ingesta no encontrado: " + archivoId));
+        byte[] contenido = fileStorage.read(archivo.getId());
         archivo.setEstado(ArchivoIngesta.ESTADO_PENDIENTE);
         repository.save(archivo);
-        procesarAsync(archivo.getId());
+        processor.procesar(archivo.getId(), empresaId, archivo.getGranularidad(), contenido);
         return IngestionMapper.toUploadResponseDto(archivo, "Reintentando procesamiento");
     }
 
@@ -83,10 +89,18 @@ public class IngestionService {
         repository.save(archivo);
     }
 
-    private String sha256(MultipartFile file) {
+    private byte[] readBytes(MultipartFile file) {
+        try {
+            return file.getBytes();
+        } catch (Exception e) {
+            throw new InvalidFileException("No se pudo leer el archivo recibido", e);
+        }
+    }
+
+    private String sha256(byte[] contenido) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(file.getBytes());
+            byte[] hash = digest.digest(contenido);
             return HexFormat.of().formatHex(hash);
         } catch (Exception e) {
             throw new InvalidFileException("No se pudo calcular el hash del archivo", e);

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,25 +42,50 @@ class IngestionServiceTest {
     @Mock
     private AuditoriaIntegridadRepository auditoriaIntegridadRepository;
 
+    @Mock
+    private IngestionFileStorage fileStorage;
+
+    @Mock
+    private IngestionProcessor processor;
+
+    private IngestionService newService() {
+        return new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository,
+                auditoriaIntegridadRepository, fileStorage, processor);
+    }
+
     @Test
     void uploadRejectsDuplicateHash() {
-        MockMultipartFile file = new MockMultipartFile("file", "ventas.xlsx", "application/octet-stream", "contenido".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "ventas.csv", "text/csv", "contenido".getBytes());
         when(repository.existsByHashSha256(any())).thenReturn(true);
 
-        IngestionService service = new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository, auditoriaIntegridadRepository);
+        IngestionService service = newService();
 
         assertThatThrownBy(() -> service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31)))
                 .isInstanceOf(ConflictException.class);
+        verify(processor, never()).procesar(any(), any(), any(), any());
+    }
+
+    @Test
+    void uploadSavesFileAndTriggersProcessor() {
+        MockMultipartFile file = new MockMultipartFile("file", "ventas.csv", "text/csv", "sku,anio,mes,unidades_vendidas,monto_facturado".getBytes());
+        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IngestionService service = newService();
+        service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
+
+        verify(fileStorage).save(any(), any());
+        verify(processor).procesar(any(), eq("emp-1"), eq("MENSUAL"), any());
     }
 
     @Test
     void borrarSetsEstadoEliminadoWithoutDeletingRow() {
-        ArchivoIngesta archivo = new ArchivoIngesta("emp-1", "ventas.xlsx", "hash123", "MENSUAL",
+        ArchivoIngesta archivo = new ArchivoIngesta("emp-1", "ventas.csv", "hash123", "MENSUAL",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
         when(repository.findByIdAndEmpresaId("arch-1", "emp-1")).thenReturn(Optional.of(archivo));
         when(repository.save(archivo)).thenReturn(archivo);
 
-        IngestionService service = new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository, auditoriaIntegridadRepository);
+        IngestionService service = newService();
         service.borrar("emp-1", "arch-1");
 
         assertThat(archivo.getEstado()).isEqualTo(ArchivoIngesta.ESTADO_ELIMINADO);
@@ -69,22 +95,38 @@ class IngestionServiceTest {
     void borrarThrowsWhenArchivoNotFoundForEmpresa() {
         when(repository.findByIdAndEmpresaId("arch-x", "emp-1")).thenReturn(Optional.empty());
 
-        IngestionService service = new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository, auditoriaIntegridadRepository);
+        IngestionService service = newService();
 
         assertThatThrownBy(() -> service.borrar("emp-1", "arch-x"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
+    void resyncReadsStoredFileAndTriggersProcessorAgain() {
+        ArchivoIngesta archivo = new ArchivoIngesta("emp-1", "ventas.csv", "hash1", "MENSUAL",
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
+        when(repository.findByIdAndEmpresaId("arch-1", "emp-1")).thenReturn(Optional.of(archivo));
+        when(repository.save(archivo)).thenReturn(archivo);
+        byte[] contenido = "sku,anio,mes,unidades_vendidas,monto_facturado".getBytes();
+        when(fileStorage.read(archivo.getId())).thenReturn(contenido);
+
+        IngestionService service = newService();
+        service.resync("emp-1", "arch-1");
+
+        assertThat(archivo.getEstado()).isEqualTo(ArchivoIngesta.ESTADO_PENDIENTE);
+        verify(processor).procesar(archivo.getId(), "emp-1", "MENSUAL", contenido);
+    }
+
+    @Test
     void getHistoryIncludesCantRegistrosFromVentasMensualesYSemanales() {
-        ArchivoIngesta archivo = new ArchivoIngesta("emp-1", "ventas.xlsx", "hash1", "MENSUAL",
+        ArchivoIngesta archivo = new ArchivoIngesta("emp-1", "ventas.csv", "hash1", "MENSUAL",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
         Page<ArchivoIngesta> page = new PageImpl<>(List.of(archivo));
         when(repository.findByEmpresaIdOrderByFechaRecepcionDesc(eq("emp-1"), any())).thenReturn(page);
         when(ventaMensualCountRepository.countByArchivoId(archivo.getId())).thenReturn(150L);
         when(ventaSemanalCountRepository.countByArchivoId(archivo.getId())).thenReturn(0L);
 
-        IngestionService service = new IngestionService(repository, ventaMensualCountRepository, ventaSemanalCountRepository, auditoriaIntegridadRepository);
+        IngestionService service = newService();
 
         Page<IngestionHistoryItemDto> result = service.getHistory("emp-1", PageRequest.of(0, 10));
 
@@ -93,12 +135,11 @@ class IngestionServiceTest {
 
     @Test
     void uploadCreaTambienUnSelloDeAuditoriaIntegridadValido() {
-        MockMultipartFile file = new MockMultipartFile("file", "ventas.xlsx", "application/octet-stream", "contenido".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "ventas.csv", "text/csv", "contenido".getBytes());
         when(repository.existsByHashSha256(any())).thenReturn(false);
         when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        IngestionService service = new IngestionService(
-                repository, ventaMensualCountRepository, ventaSemanalCountRepository, auditoriaIntegridadRepository);
+        IngestionService service = newService();
 
         service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
 

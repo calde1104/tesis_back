@@ -65,6 +65,19 @@ public class VentaMensual {
     protected VentaMensual() {
     }
 
+    public VentaMensual(String productoId, String archivoId, String empresaId, int anio, int mes,
+                         int unidadesVendidas, BigDecimal montoFacturado, BigDecimal precioUnitario) {
+        this.productoId = productoId;
+        this.archivoId = archivoId;
+        this.empresaId = empresaId;
+        this.anio = anio;
+        this.mes = mes;
+        this.unidadesVendidas = unidadesVendidas;
+        this.montoFacturado = montoFacturado;
+        this.precioUnitario = precioUnitario;
+        this.esAgregado = false;
+    }
+
     public Long getId() {
         return id;
     }
