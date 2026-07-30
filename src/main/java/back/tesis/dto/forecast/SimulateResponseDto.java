@@ -1,8 +1,12 @@
 package back.tesis.dto.forecast;
 
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record SimulateResponseDto(boolean simulado, Map<String, Object> resultado) {
-    public SimulateResponseDto {
-    }
+import java.util.List;
+
+public record SimulateResponseDto(
+        String status,
+        @JsonProperty("id_producto") String idProducto,
+        @JsonProperty("variaciones_aplicadas") VariacionesAplicadasDto variacionesAplicadas,
+        List<SimulacionMesDto> simulacion) {
 }

@@ -4,6 +4,7 @@ import back.tesis.dto.forecast.FeatureImportanceDto;
 import back.tesis.dto.forecast.ForecastPointDto;
 import back.tesis.dto.forecast.SimulateRequest;
 import back.tesis.dto.forecast.SimulateResponseDto;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,7 +30,7 @@ public class ForecastController {
     }
 
     @PostMapping("/simulate")
-    public SimulateResponseDto simulate(@PathVariable String empresaId, @RequestBody SimulateRequest request) {
+    public SimulateResponseDto simulate(@PathVariable String empresaId, @Valid @RequestBody SimulateRequest request) {
         return forecastService.simulate(empresaId, request);
     }
 
