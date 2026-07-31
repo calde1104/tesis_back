@@ -21,7 +21,7 @@ class MarketShareServiceTest {
     void getOverviewComputesPesoRealDividiendoUnidadesEmpresaSobreMercado() {
         when(repository.findUnidadesEmpresaPorPeriodo("emp-1", null, null, null, null, null))
                 .thenReturn(List.of(periodoRow(2024, 3, 25L)));
-        when(repository.findUnidadesMercadoPorPeriodo(null, null, null, null, null))
+        when(repository.findUnidadesMercadoPorPeriodo("emp-1", null, null, null, null, null))
                 .thenReturn(List.of(periodoRow(2024, 3, 100L)));
 
         MarketShareService service = new MarketShareService(repository);
@@ -37,7 +37,7 @@ class MarketShareServiceTest {
     void getOverviewReturnsNullPctWhenMercadoDataMissingForThatPeriodo() {
         when(repository.findUnidadesEmpresaPorPeriodo("emp-1", null, null, null, null, null))
                 .thenReturn(List.of(periodoRow(2024, 3, 25L)));
-        when(repository.findUnidadesMercadoPorPeriodo(null, null, null, null, null))
+        when(repository.findUnidadesMercadoPorPeriodo("emp-1", null, null, null, null, null))
                 .thenReturn(List.of());
 
         MarketShareService service = new MarketShareService(repository);
@@ -51,7 +51,7 @@ class MarketShareServiceTest {
     void getOverviewPassesFiltersThroughToRepository() {
         when(repository.findUnidadesEmpresaPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
                 .thenReturn(List.of());
-        when(repository.findUnidadesMercadoPorPeriodo("marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
+        when(repository.findUnidadesMercadoPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
                 .thenReturn(List.of());
 
         MarketShareService service = new MarketShareService(repository);
@@ -59,7 +59,7 @@ class MarketShareServiceTest {
         service.getOverview("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
 
         verify(repository).findUnidadesEmpresaPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
-        verify(repository).findUnidadesMercadoPorPeriodo("marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
+        verify(repository).findUnidadesMercadoPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
     }
 
     @Test
@@ -77,7 +77,7 @@ class MarketShareServiceTest {
     @Test
     void getMarketShareUnidadesPromedioPorPeriodoComputesPesoReal() {
         when(repository.sumUnidadesEmpresaPorPeriodo("emp-1", 2024, 3)).thenReturn(25L);
-        when(repository.sumUnidadesMercadoPorPeriodo(2024, 3)).thenReturn(100L);
+        when(repository.sumUnidadesMercadoPorPeriodo("emp-1", 2024, 3)).thenReturn(100L);
 
         MarketShareService service = new MarketShareService(repository);
 
@@ -87,7 +87,7 @@ class MarketShareServiceTest {
     @Test
     void getMarketShareUnidadesPromedioPorPeriodoReturnsNullWithoutMercadoData() {
         when(repository.sumUnidadesEmpresaPorPeriodo("emp-1", 2024, 3)).thenReturn(25L);
-        when(repository.sumUnidadesMercadoPorPeriodo(2024, 3)).thenReturn(null);
+        when(repository.sumUnidadesMercadoPorPeriodo("emp-1", 2024, 3)).thenReturn(null);
 
         MarketShareService service = new MarketShareService(repository);
 

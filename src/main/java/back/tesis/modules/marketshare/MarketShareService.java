@@ -24,7 +24,7 @@ public class MarketShareService {
         List<VentaMensualMarketShareRepository.PeriodoUnidadesRow> filasEmpresa =
                 repository.findUnidadesEmpresaPorPeriodo(empresaId, marcaId, categoriaId, departamentoId, anios, meses);
         Map<String, Long> unidadesMercadoPorPeriodo =
-                repository.findUnidadesMercadoPorPeriodo(marcaId, categoriaId, departamentoId, anios, meses)
+                repository.findUnidadesMercadoPorPeriodo(empresaId, marcaId, categoriaId, departamentoId, anios, meses)
                         .stream()
                         .collect(Collectors.toMap(
                                 row -> clavePeriodo(row.getAnio(), row.getMes()),
@@ -56,7 +56,7 @@ public class MarketShareService {
 
     public Double getMarketShareUnidadesPromedioPorPeriodo(String empresaId, int anio, int mes) {
         Long unidadesEmpresa = repository.sumUnidadesEmpresaPorPeriodo(empresaId, anio, mes);
-        Long unidadesMercado = repository.sumUnidadesMercadoPorPeriodo(anio, mes);
+        Long unidadesMercado = repository.sumUnidadesMercadoPorPeriodo(empresaId, anio, mes);
         if (unidadesEmpresa == null || unidadesMercado == null || unidadesMercado == 0) {
             return null;
         }
