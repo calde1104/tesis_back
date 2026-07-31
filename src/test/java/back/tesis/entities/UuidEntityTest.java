@@ -22,6 +22,7 @@ class UuidEntityTest {
         assignId.invoke(dummy);
 
         assertThat(dummy.getId()).isNotNull();
+
         assertThat(dummy.getId()).matches("[0-9a-f-]{36}");
     }
 
