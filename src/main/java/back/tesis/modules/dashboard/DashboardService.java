@@ -4,15 +4,18 @@ import back.tesis.dto.context.CalendarioDto;
 import back.tesis.dto.context.MacroDto;
 import back.tesis.dto.dashboard.ContextVariablesDto;
 import back.tesis.dto.dashboard.KpisDto;
+import back.tesis.dto.dashboard.MarcaShareOfAssortmentDto;
 import back.tesis.dto.dashboard.MarketShareCompositionDto;
 import back.tesis.dto.dashboard.SalesEvolutionPointDto;
 import back.tesis.dto.dashboard.ShareOfAssortmentCompositionDto;
 import back.tesis.dto.sales.SalesSummaryDto;
 import back.tesis.entities.Empresa;
 import back.tesis.entities.EmpresaRepository;
+import back.tesis.entities.Marca;
 import back.tesis.mapper.dashboard.DashboardMapper;
 import back.tesis.modules.context.ContextService;
 import back.tesis.modules.marketshare.MarketShareService;
+import back.tesis.modules.sales.MarcaFilterRepository;
 import back.tesis.modules.sales.SalesService;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +35,7 @@ public class DashboardService {
     private final EmpresaRepository empresaRepository;
     private final ContextService contextService;
     private final AssortmentRepository assortmentRepository;
+    private final MarcaFilterRepository marcaRepository;
 
     public DashboardService(
             SalesService salesService,
@@ -39,7 +43,8 @@ public class DashboardService {
             MarketShareCompositionRepository compositionRepository,
             EmpresaRepository empresaRepository,
             ContextService contextService,
-            AssortmentRepository assortmentRepository
+            AssortmentRepository assortmentRepository,
+            MarcaFilterRepository marcaRepository
     ) {
         this.salesService = salesService;
         this.marketShareService = marketShareService;
@@ -47,6 +52,7 @@ public class DashboardService {
         this.empresaRepository = empresaRepository;
         this.contextService = contextService;
         this.assortmentRepository = assortmentRepository;
+        this.marcaRepository = marcaRepository;
     }
 
     public KpisDto getKpis(String empresaId, int anio, int mes) {
@@ -57,8 +63,12 @@ public class DashboardService {
         return DashboardMapper.toKpisDto(anio, mes, summary, marketShareProm, priceGapProm, shareOfAssortmentPct);
     }
 
-    public List<ShareOfAssortmentCompositionDto> getShareOfAssortmentRanking(
+    public List<?> getShareOfAssortmentRanking(
             String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
+        if (marcaId != null || categoriaId != null) {
+            return getShareOfAssortmentPorMarca(anio, mes, marcaId, categoriaId, departamentoId);
+        }
+
         int cutoffAnio = anio;
         int cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
         if (cutoffMes <= 0) {
@@ -67,7 +77,7 @@ public class DashboardService {
         }
 
         List<String> productosActivosPropios = assortmentRepository.findActiveProductoIds(
-                empresaId, cutoffAnio, cutoffMes, anio, mes, marcaId, categoriaId, departamentoId);
+                empresaId, cutoffAnio, cutoffMes, anio, mes, null, null, departamentoId);
         if (productosActivosPropios.isEmpty()) {
             return List.of();
         }
@@ -83,7 +93,7 @@ public class DashboardService {
         }
 
         List<AssortmentRepository.EmpresaProductoCountRow> rows = assortmentRepository.countActiveProductosPorEmpresa(
-                cutoffAnio, cutoffMes, anio, mes, categoriaIds, marcaId, departamentoId);
+                cutoffAnio, cutoffMes, anio, mes, categoriaIds, null, departamentoId);
 
         List<String> empresaIds = rows.stream().map(AssortmentRepository.EmpresaProductoCountRow::getEmpresaId).toList();
         Map<String, String> nombresPorEmpresa = empresaRepository.findAllById(empresaIds).stream()
@@ -96,6 +106,44 @@ public class DashboardService {
                         100.0 * row.getTotalProductos() / totalMercado))
                 .sorted(Comparator.comparing(
                         ShareOfAssortmentCompositionDto::shareOfAssortmentPct, Comparator.reverseOrder()))
+                .toList();
+    }
+
+    private List<MarcaShareOfAssortmentDto> getShareOfAssortmentPorMarca(
+            int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
+        int cutoffAnio = anio;
+        int cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
+        if (cutoffMes <= 0) {
+            cutoffAnio -= 1;
+            cutoffMes += 12;
+        }
+
+        List<Integer> categoriaIds = categoriaId != null
+                ? List.of(categoriaId)
+                : assortmentRepository.findCategoriaIdsForMarca(marcaId);
+        if (categoriaIds.isEmpty()) {
+            return List.of();
+        }
+
+        long totalMercado = assortmentRepository.countMarketProductosByCategorias(categoriaIds);
+        if (totalMercado == 0) {
+            return List.of();
+        }
+
+        List<AssortmentRepository.MarcaProductoCountRow> rows = assortmentRepository.countActiveProductosPorMarca(
+                cutoffAnio, cutoffMes, anio, mes, categoriaIds, departamentoId);
+
+        List<String> marcaIds = rows.stream().map(AssortmentRepository.MarcaProductoCountRow::getMarcaId).toList();
+        Map<String, String> nombresPorMarca = marcaRepository.findAllById(marcaIds).stream()
+                .collect(Collectors.toMap(Marca::getId, Marca::getNombre));
+
+        return rows.stream()
+                .map(row -> new MarcaShareOfAssortmentDto(
+                        row.getMarcaId(),
+                        nombresPorMarca.getOrDefault(row.getMarcaId(), "(desconocida)"),
+                        100.0 * row.getTotalProductos() / totalMercado))
+                .sorted(Comparator.comparing(
+                        MarcaShareOfAssortmentDto::shareOfAssortmentPct, Comparator.reverseOrder()))
                 .toList();
     }
 

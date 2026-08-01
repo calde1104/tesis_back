@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -75,8 +76,8 @@ class DashboardControllerTest {
 
     @Test
     void getShareOfAssortmentPassesQueryParamsAsFilters() throws Exception {
-        when(dashboardService.getShareOfAssortmentRanking("emp-1", 2024, 3, "marca-1", 10, 5))
-                .thenReturn(List.of(new ShareOfAssortmentCompositionDto("emp-1", "Empresa 1", 42.5)));
+        doReturn(List.of(new ShareOfAssortmentCompositionDto("emp-1", "Empresa 1", 42.5)))
+                .when(dashboardService).getShareOfAssortmentRanking("emp-1", 2024, 3, "marca-1", 10, 5);
 
         mockMvc.perform(get("/v1/emp-1/dashboard/share-of-assortment")
                         .param("anio", "2024")

@@ -4,7 +4,6 @@ import back.tesis.dto.dashboard.ContextVariablesDto;
 import back.tesis.dto.dashboard.KpisDto;
 import back.tesis.dto.dashboard.MarketShareCompositionDto;
 import back.tesis.dto.dashboard.SalesEvolutionPointDto;
-import back.tesis.dto.dashboard.ShareOfAssortmentCompositionDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,7 +42,7 @@ public class DashboardController {
     }
 
     @GetMapping("/share-of-assortment")
-    public List<ShareOfAssortmentCompositionDto> getShareOfAssortment(
+    public List<?> getShareOfAssortment(
             @PathVariable String empresaId, @RequestParam int anio, @RequestParam int mes,
             @RequestParam(required = false) String marcaId,
             @RequestParam(required = false) Integer categoriaId,

@@ -45,25 +45,34 @@ public interface VentaMensualMarketShareRepository extends JpaRepository<VentaMe
     @Query("""
             SELECT v.anio AS anio, v.mes AS mes, SUM(v.unidadesVendidas) AS totalUnidades
             FROM VentaMensual v
-            WHERE v.productoId IN (
-                  SELECT pv.producto.id FROM ProductoVersion pv
-                  WHERE pv.vigenciaHasta IS NULL
-                    AND pv.categoria.id IN (
-                        SELECT DISTINCT pv2.categoria.id
-                        FROM ProductoVersion pv2
-                        WHERE pv2.vigenciaHasta IS NULL
-                          AND pv2.producto.id IN (
-                              SELECT DISTINCT v2.productoId FROM VentaMensual v2
-                              WHERE v2.empresaId = :empresaId AND v2.anio = v.anio AND v2.mes = v.mes
-                          )
-                    )
+            WHERE (
+                  (:marcaId IS NOT NULL AND v.productoId IN (
+                      SELECT pv.producto.id FROM ProductoVersion pv
+                      WHERE pv.vigenciaHasta IS NULL
+                        AND pv.categoria.id IN (
+                            SELECT DISTINCT pv2.categoria.id FROM ProductoVersion pv2
+                            WHERE pv2.vigenciaHasta IS NULL
+                              AND pv2.producto.id IN (SELECT p.id FROM Producto p WHERE p.marcaId = :marcaId)
+                        )
+                  ))
+                  OR (:marcaId IS NULL AND :categoriaId IS NOT NULL AND v.productoId IN (
+                      SELECT pv.producto.id FROM ProductoVersion pv
+                      WHERE pv.vigenciaHasta IS NULL AND pv.categoria.id = :categoriaId
+                  ))
+                  OR (:marcaId IS NULL AND :categoriaId IS NULL AND v.productoId IN (
+                      SELECT pv.producto.id FROM ProductoVersion pv
+                      WHERE pv.vigenciaHasta IS NULL
+                        AND pv.categoria.id IN (
+                            SELECT DISTINCT pv2.categoria.id
+                            FROM ProductoVersion pv2
+                            WHERE pv2.vigenciaHasta IS NULL
+                              AND pv2.producto.id IN (
+                                  SELECT DISTINCT v2.productoId FROM VentaMensual v2
+                                  WHERE v2.empresaId = :empresaId AND v2.anio = v.anio AND v2.mes = v.mes
+                              )
+                        )
+                  ))
               )
-              AND (:marcaId IS NULL OR v.productoId IN (
-                  SELECT p.id FROM Producto p WHERE p.marcaId = :marcaId
-              ))
-              AND (:categoriaId IS NULL OR v.productoId IN (
-                  SELECT pv.producto.id FROM ProductoVersion pv WHERE pv.categoria.id = :categoriaId
-              ))
               AND (:departamentoId IS NULL OR v.productoId IN (
                   SELECT pv.producto.id FROM ProductoVersion pv WHERE pv.categoria.departamento.id = :departamentoId
               ))

@@ -81,4 +81,41 @@ public interface AssortmentRepository extends JpaRepository<VentaMensual, Long> 
             @Param("marcaId") String marcaId,
             @Param("departamentoId") Integer departamentoId
     );
+
+    @Query("""
+            SELECT DISTINCT pv.categoria.id
+            FROM ProductoVersion pv
+            WHERE pv.vigenciaHasta IS NULL
+              AND pv.producto.id IN (SELECT p.id FROM Producto p WHERE p.marcaId = :marcaId)
+            """)
+    List<Integer> findCategoriaIdsForMarca(@Param("marcaId") String marcaId);
+
+    interface MarcaProductoCountRow {
+        String getMarcaId();
+        Long getTotalProductos();
+    }
+
+    @Query("""
+            SELECT p.marcaId AS marcaId, COUNT(DISTINCT v.productoId) AS totalProductos
+            FROM VentaMensual v, Producto p
+            WHERE v.productoId = p.id
+              AND (v.anio > :cutoffAnio OR (v.anio = :cutoffAnio AND v.mes >= :cutoffMes))
+              AND (v.anio < :anio OR (v.anio = :anio AND v.mes <= :mes))
+              AND v.productoId IN (
+                  SELECT pv.producto.id FROM ProductoVersion pv
+                  WHERE pv.vigenciaHasta IS NULL AND pv.categoria.id IN :categoriaIds
+              )
+              AND (:departamentoId IS NULL OR v.productoId IN (
+                  SELECT pv2.producto.id FROM ProductoVersion pv2 WHERE pv2.categoria.departamento.id = :departamentoId
+              ))
+            GROUP BY p.marcaId
+            """)
+    List<MarcaProductoCountRow> countActiveProductosPorMarca(
+            @Param("cutoffAnio") int cutoffAnio,
+            @Param("cutoffMes") int cutoffMes,
+            @Param("anio") int anio,
+            @Param("mes") int mes,
+            @Param("categoriaIds") List<Integer> categoriaIds,
+            @Param("departamentoId") Integer departamentoId
+    );
 }
