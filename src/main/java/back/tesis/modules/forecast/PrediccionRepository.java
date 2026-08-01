@@ -15,16 +15,10 @@ public interface PrediccionRepository extends JpaRepository<Prediccion, String> 
                 p.anio, p.mes, SUM(p.unidadesPredichas), SUM(p.intervaloConfianzaInf), SUM(p.intervaloConfianzaSup))
             FROM Prediccion p
             WHERE p.empresaId = :empresaId AND p.modeloId = :modeloId
-              AND (p.anio > :desdeAnio OR (p.anio = :desdeAnio AND p.mes >= :desdeMes))
-              AND (p.anio < :hastaAnio OR (p.anio = :hastaAnio AND p.mes <= :hastaMes))
             GROUP BY p.anio, p.mes
             ORDER BY p.anio, p.mes
             """)
     List<ForecastAgregadoRow> findForecastAgregado(
             @Param("empresaId") String empresaId,
-            @Param("modeloId") String modeloId,
-            @Param("desdeAnio") int desdeAnio,
-            @Param("desdeMes") int desdeMes,
-            @Param("hastaAnio") int hastaAnio,
-            @Param("hastaMes") int hastaMes);
+            @Param("modeloId") String modeloId);
 }

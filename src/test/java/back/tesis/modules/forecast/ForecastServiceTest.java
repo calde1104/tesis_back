@@ -11,14 +11,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -35,36 +31,38 @@ class ForecastServiceTest {
     private ModeloVersionRepository modeloVersionRepository;
 
     @Test
-    void getForecastReturnsTwelveMonthsHorizonAllNullWithoutModeloActivo() {
+    void getForecastReturnsEmptyWithoutModeloActivo() {
         when(modeloVersionRepository.findByEmpresaIdAndActivoTrue("emp-1")).thenReturn(Optional.empty());
 
         ForecastService service = new ForecastService(mlForecastClient, prediccionRepository, modeloVersionRepository);
 
         var result = service.getForecast("emp-1");
 
-        assertThat(result).hasSize(12);
-        assertThat(result).allSatisfy(p -> assertThat(p.unidadesPredichas()).isNull());
+        assertThat(result).isEmpty();
         verifyNoInteractions(prediccionRepository);
     }
 
     @Test
-    void getForecastFillsMonthsWithPrediccionesRealesAndLeavesRestNull() throws Exception {
+    void getForecastReturnsExactlyLoPredichoSinAcotarPorFechaDelServidor() throws Exception {
         ModeloVersion modeloActivo = newModeloVersion("modelo-1");
         when(modeloVersionRepository.findByEmpresaIdAndActivoTrue("emp-1")).thenReturn(Optional.of(modeloActivo));
 
-        LocalDate primerMes = LocalDate.now().plusMonths(1).withDayOfMonth(1);
-        ForecastAgregadoRow puntoConDatos = new ForecastAgregadoRow(
-                primerMes.getYear(), primerMes.getMonthValue(), 120.0, 100.0, 140.0);
-        when(prediccionRepository.findForecastAgregado(anyString(), anyString(), anyInt(), anyInt(), anyInt(), anyInt()))
-                .thenReturn(List.of(puntoConDatos));
+        ForecastAgregadoRow puntoPasado = new ForecastAgregadoRow(2024, 11, 360.0, 300.0, 420.0);
+        ForecastAgregadoRow puntoFuturoLejano = new ForecastAgregadoRow(2026, 2, 5685.0, 4800.0, 6500.0);
+        when(prediccionRepository.findForecastAgregado("emp-1", "modelo-1"))
+                .thenReturn(List.of(puntoPasado, puntoFuturoLejano));
 
         ForecastService service = new ForecastService(mlForecastClient, prediccionRepository, modeloVersionRepository);
 
         var result = service.getForecast("emp-1");
 
-        assertThat(result).hasSize(12);
-        assertThat(result.get(0).unidadesPredichas()).isEqualTo(120f);
-        assertThat(result.subList(1, 12)).allSatisfy(p -> assertThat(p.unidadesPredichas()).isNull());
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).anio()).isEqualTo(2024);
+        assertThat(result.get(0).mes()).isEqualTo(11);
+        assertThat(result.get(0).unidadesPredichas()).isEqualTo(360f);
+        assertThat(result.get(1).anio()).isEqualTo(2026);
+        assertThat(result.get(1).mes()).isEqualTo(2);
+        assertThat(result.get(1).unidadesPredichas()).isEqualTo(5685f);
     }
 
     @Test
