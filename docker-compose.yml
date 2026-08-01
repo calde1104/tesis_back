@@ -13,6 +13,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-un-secreto-super-seguro-tesis-2026-min-32-bytes}
       - SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
       - SPRING_FLYWAY_BASELINE_VERSION=5
+      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://tesis-ia-api:8000}
     volumes:
       - ingestion-uploads:/app/data/ingestion-uploads
     networks:
