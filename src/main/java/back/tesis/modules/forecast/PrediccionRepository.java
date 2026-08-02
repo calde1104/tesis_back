@@ -14,11 +14,14 @@ public interface PrediccionRepository extends JpaRepository<Prediccion, String> 
             SELECT new back.tesis.dto.forecast.ForecastAgregadoRow(
                 p.anio, p.mes, SUM(p.unidadesPredichas), SUM(p.intervaloConfianzaInf), SUM(p.intervaloConfianzaSup))
             FROM Prediccion p
+            LEFT JOIN Producto prod ON prod.id = p.productoId
             WHERE p.empresaId = :empresaId AND p.modeloId = :modeloId
+              AND (:sku IS NULL OR prod.sku = :sku OR p.productoId = :sku)
             GROUP BY p.anio, p.mes
             ORDER BY p.anio, p.mes
             """)
     List<ForecastAgregadoRow> findForecastAgregado(
             @Param("empresaId") String empresaId,
-            @Param("modeloId") String modeloId);
+            @Param("modeloId") String modeloId,
+            @Param("sku") String sku);
 }

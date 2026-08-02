@@ -26,15 +26,20 @@ public class ForecastService {
         this.modeloVersionRepository = modeloVersionRepository;
     }
 
-    public List<ForecastPointDto> getForecast(String empresaId) {
+    public List<ForecastPointDto> getForecast(String empresaId, String sku) {
         Optional<ModeloVersion> modeloActivo = modeloVersionRepository.findByEmpresaIdAndActivoTrue(empresaId);
+        String skuNormalizado = normalizarSku(sku);
 
         return modeloActivo
-                .map(modelo -> prediccionRepository.findForecastAgregado(empresaId, modelo.getId()))
+                .map(modelo -> prediccionRepository.findForecastAgregado(empresaId, modelo.getId(), skuNormalizado))
                 .orElse(List.of())
                 .stream()
                 .map(ForecastService::toForecastPointDto)
                 .toList();
+    }
+
+    private static String normalizarSku(String sku) {
+        return (sku == null || sku.isBlank() || "total".equalsIgnoreCase(sku)) ? null : sku;
     }
 
     private static ForecastPointDto toForecastPointDto(ForecastAgregadoRow row) {

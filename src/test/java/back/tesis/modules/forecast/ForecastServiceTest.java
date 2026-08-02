@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -36,7 +38,7 @@ class ForecastServiceTest {
 
         ForecastService service = new ForecastService(mlForecastClient, prediccionRepository, modeloVersionRepository);
 
-        var result = service.getForecast("emp-1");
+        var result = service.getForecast("emp-1", null);
 
         assertThat(result).isEmpty();
         verifyNoInteractions(prediccionRepository);
@@ -49,12 +51,12 @@ class ForecastServiceTest {
 
         ForecastAgregadoRow puntoPasado = new ForecastAgregadoRow(2024, 11, 360.0, 300.0, 420.0);
         ForecastAgregadoRow puntoFuturoLejano = new ForecastAgregadoRow(2026, 2, 5685.0, 4800.0, 6500.0);
-        when(prediccionRepository.findForecastAgregado("emp-1", "modelo-1"))
+        when(prediccionRepository.findForecastAgregado("emp-1", "modelo-1", null))
                 .thenReturn(List.of(puntoPasado, puntoFuturoLejano));
 
         ForecastService service = new ForecastService(mlForecastClient, prediccionRepository, modeloVersionRepository);
 
-        var result = service.getForecast("emp-1");
+        var result = service.getForecast("emp-1", null);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).anio()).isEqualTo(2024);
@@ -63,6 +65,35 @@ class ForecastServiceTest {
         assertThat(result.get(1).anio()).isEqualTo(2026);
         assertThat(result.get(1).mes()).isEqualTo(2);
         assertThat(result.get(1).unidadesPredichas()).isEqualTo(5685f);
+    }
+
+    @Test
+    void getForecastNormalizesBlankAndTotalSkuToNull() throws Exception {
+        ModeloVersion modeloActivo = newModeloVersion("modelo-1");
+        when(modeloVersionRepository.findByEmpresaIdAndActivoTrue("emp-1")).thenReturn(Optional.of(modeloActivo));
+        when(prediccionRepository.findForecastAgregado("emp-1", "modelo-1", null)).thenReturn(List.of());
+
+        ForecastService service = new ForecastService(mlForecastClient, prediccionRepository, modeloVersionRepository);
+
+        service.getForecast("emp-1", "");
+        service.getForecast("emp-1", "total");
+        service.getForecast("emp-1", "TOTAL");
+
+        verify(prediccionRepository, times(3))
+                .findForecastAgregado("emp-1", "modelo-1", null);
+    }
+
+    @Test
+    void getForecastPassesSkuThroughToRepositoryWhenGivenAParticularProduct() throws Exception {
+        ModeloVersion modeloActivo = newModeloVersion("modelo-1");
+        when(modeloVersionRepository.findByEmpresaIdAndActivoTrue("emp-1")).thenReturn(Optional.of(modeloActivo));
+        when(prediccionRepository.findForecastAgregado("emp-1", "modelo-1", "SKU-001")).thenReturn(List.of());
+
+        ForecastService service = new ForecastService(mlForecastClient, prediccionRepository, modeloVersionRepository);
+
+        service.getForecast("emp-1", "SKU-001");
+
+        verify(prediccionRepository).findForecastAgregado("emp-1", "modelo-1", "SKU-001");
     }
 
     @Test
