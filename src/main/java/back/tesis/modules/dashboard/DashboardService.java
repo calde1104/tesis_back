@@ -64,16 +64,24 @@ public class DashboardService {
     }
 
     public List<?> getShareOfAssortmentRanking(
-            String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
+            String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId,
+            Integer anioDesde) {
         if (marcaId != null || categoriaId != null) {
-            return getShareOfAssortmentPorMarca(anio, mes, marcaId, categoriaId, departamentoId);
+            return getShareOfAssortmentPorMarca(anio, mes, marcaId, categoriaId, departamentoId, anioDesde);
         }
 
-        int cutoffAnio = anio;
-        int cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
-        if (cutoffMes <= 0) {
-            cutoffAnio -= 1;
-            cutoffMes += 12;
+        int cutoffAnio;
+        int cutoffMes;
+        if (anioDesde != null) {
+            cutoffAnio = anioDesde;
+            cutoffMes = 1;
+        } else {
+            cutoffAnio = anio;
+            cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
+            if (cutoffMes <= 0) {
+                cutoffAnio -= 1;
+                cutoffMes += 12;
+            }
         }
 
         List<String> productosActivosPropios = assortmentRepository.findActiveProductoIds(
@@ -110,12 +118,19 @@ public class DashboardService {
     }
 
     private List<MarcaShareOfAssortmentDto> getShareOfAssortmentPorMarca(
-            int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
-        int cutoffAnio = anio;
-        int cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
-        if (cutoffMes <= 0) {
-            cutoffAnio -= 1;
-            cutoffMes += 12;
+            int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId, Integer anioDesde) {
+        int cutoffAnio;
+        int cutoffMes;
+        if (anioDesde != null) {
+            cutoffAnio = anioDesde;
+            cutoffMes = 1;
+        } else {
+            cutoffAnio = anio;
+            cutoffMes = mes - MESES_VENTANA_ACTIVO + 1;
+            if (cutoffMes <= 0) {
+                cutoffAnio -= 1;
+                cutoffMes += 12;
+            }
         }
 
         List<Integer> categoriaIds = categoriaId != null

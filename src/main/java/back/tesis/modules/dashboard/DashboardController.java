@@ -46,8 +46,10 @@ public class DashboardController {
             @PathVariable String empresaId, @RequestParam int anio, @RequestParam int mes,
             @RequestParam(required = false) String marcaId,
             @RequestParam(required = false) Integer categoriaId,
-            @RequestParam(required = false) Integer departamentoId) {
-        return dashboardService.getShareOfAssortmentRanking(empresaId, anio, mes, marcaId, categoriaId, departamentoId);
+            @RequestParam(required = false) Integer departamentoId,
+            @RequestParam(required = false) Integer anioDesde) {
+        return dashboardService.getShareOfAssortmentRanking(
+                empresaId, anio, mes, marcaId, categoriaId, departamentoId, anioDesde);
     }
 
     @GetMapping("/context-variables")

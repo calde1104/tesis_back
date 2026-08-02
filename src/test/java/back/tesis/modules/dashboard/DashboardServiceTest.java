@@ -188,7 +188,7 @@ class DashboardServiceTest {
                 .thenReturn(List.of(empresaProductoCountRow("emp-1", 1L), empresaProductoCountRow("emp-2", 3L)));
         when(empresaRepository.findAllById(List.of("emp-1", "emp-2"))).thenReturn(List.of());
 
-        var result = newService().getShareOfAssortmentRanking("emp-1", 2024, 3, null, null, 5);
+        var result = newService().getShareOfAssortmentRanking("emp-1", 2024, 3, null, null, 5, null);
 
         assertThat(result).hasSize(2);
         List<ShareOfAssortmentCompositionDto> ranking = (List<ShareOfAssortmentCompositionDto>) result;
@@ -204,9 +204,26 @@ class DashboardServiceTest {
                 eq("emp-1"), anyInt(), anyInt(), anyInt(), anyInt(), isNull(), isNull(), isNull()))
                 .thenReturn(List.of());
 
-        var result = newService().getShareOfAssortmentRanking("emp-1", 2024, 3, null, null, null);
+        var result = newService().getShareOfAssortmentRanking("emp-1", 2024, 3, null, null, null, null);
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getShareOfAssortmentRankingWithAnioDesdeUsesJanuaryOfThatYearAsCutoff() {
+        when(assortmentRepository.findActiveProductoIds(
+                eq("emp-1"), eq(2024), eq(1), anyInt(), anyInt(), isNull(), isNull(), isNull()))
+                .thenReturn(List.of("prod-1"));
+        when(assortmentRepository.findCategoriaIdsForProductos(List.of("prod-1"))).thenReturn(List.of(10));
+        when(assortmentRepository.countMarketProductosByCategorias(List.of(10))).thenReturn(4L);
+        when(assortmentRepository.countActiveProductosPorEmpresa(
+                eq(2024), eq(1), anyInt(), anyInt(), eq(List.of(10)), isNull(), isNull()))
+                .thenReturn(List.of(empresaProductoCountRow("emp-1", 1L)));
+        when(empresaRepository.findAllById(List.of("emp-1"))).thenReturn(List.of());
+
+        var result = newService().getShareOfAssortmentRanking("emp-1", 2025, 6, null, null, null, 2024);
+
+        assertThat(result).hasSize(1);
     }
 
     @Test
@@ -216,7 +233,7 @@ class DashboardServiceTest {
                 .thenReturn(List.of(marcaProductoCountRow("marca-1", 1L), marcaProductoCountRow("marca-2", 3L)));
         when(marcaRepository.findAllById(List.of("marca-1", "marca-2"))).thenReturn(List.of());
 
-        var result = newService().getShareOfAssortmentRanking("emp-1", 2024, 3, null, 10, null);
+        var result = newService().getShareOfAssortmentRanking("emp-1", 2024, 3, null, 10, null, null);
 
         assertThat(result).hasSize(2);
         List<MarcaShareOfAssortmentDto> ranking = (List<MarcaShareOfAssortmentDto>) result;
@@ -234,13 +251,25 @@ class DashboardServiceTest {
                 .thenReturn(List.of(marcaProductoCountRow("marca-1", 1L)));
         when(marcaRepository.findAllById(List.of("marca-1"))).thenReturn(List.of(marca("marca-1", "Natura")));
 
-        var result = newService().getShareOfAssortmentRanking("emp-1", 2024, 3, "marca-1", null, null);
+        var result = newService().getShareOfAssortmentRanking("emp-1", 2024, 3, "marca-1", null, null, null);
 
         assertThat(result).hasSize(1);
         MarcaShareOfAssortmentDto dto = (MarcaShareOfAssortmentDto) result.get(0);
         assertThat(dto.marcaId()).isEqualTo("marca-1");
         assertThat(dto.marcaNombre()).isEqualTo("Natura");
         assertThat(dto.shareOfAssortmentPct()).isEqualTo(25.0);
+    }
+
+    @Test
+    void getShareOfAssortmentRankingWithCategoriaIdAndAnioDesdeUsesJanuaryOfThatYearAsCutoff() {
+        when(assortmentRepository.countMarketProductosByCategorias(List.of(10))).thenReturn(4L);
+        when(assortmentRepository.countActiveProductosPorMarca(eq(2024), eq(1), anyInt(), anyInt(), eq(List.of(10)), isNull()))
+                .thenReturn(List.of(marcaProductoCountRow("marca-1", 1L)));
+        when(marcaRepository.findAllById(List.of("marca-1"))).thenReturn(List.of());
+
+        var result = newService().getShareOfAssortmentRanking("emp-1", 2025, 6, null, 10, null, 2024);
+
+        assertThat(result).hasSize(1);
     }
 
     private static AssortmentRepository.EmpresaProductoCountRow empresaProductoCountRow(String empresaId, long totalProductos) {

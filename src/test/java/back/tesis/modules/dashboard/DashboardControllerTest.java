@@ -77,7 +77,7 @@ class DashboardControllerTest {
     @Test
     void getShareOfAssortmentPassesQueryParamsAsFilters() throws Exception {
         doReturn(List.of(new ShareOfAssortmentCompositionDto("emp-1", "Empresa 1", 42.5)))
-                .when(dashboardService).getShareOfAssortmentRanking("emp-1", 2024, 3, "marca-1", 10, 5);
+                .when(dashboardService).getShareOfAssortmentRanking("emp-1", 2024, 3, "marca-1", 10, 5, null);
 
         mockMvc.perform(get("/v1/emp-1/dashboard/share-of-assortment")
                         .param("anio", "2024")
@@ -85,6 +85,19 @@ class DashboardControllerTest {
                         .param("marcaId", "marca-1")
                         .param("categoriaId", "10")
                         .param("departamentoId", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].shareOfAssortmentPct").value(42.5));
+    }
+
+    @Test
+    void getShareOfAssortmentPassesAnioDesdeParam() throws Exception {
+        doReturn(List.of(new ShareOfAssortmentCompositionDto("emp-1", "Empresa 1", 42.5)))
+                .when(dashboardService).getShareOfAssortmentRanking("emp-1", 2025, 6, null, null, null, 2024);
+
+        mockMvc.perform(get("/v1/emp-1/dashboard/share-of-assortment")
+                        .param("anio", "2025")
+                        .param("mes", "6")
+                        .param("anioDesde", "2024"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].shareOfAssortmentPct").value(42.5));
     }
