@@ -183,8 +183,14 @@ public class DashboardService {
 
     public List<MarketShareCompositionDto> getMarketShareComposition(
             String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId) {
-        List<MarketShareCompositionRepository.CompositionRow> rows =
-                compositionRepository.findComposicionPorPeriodo(empresaId, anio, mes, marcaId, categoriaId, departamentoId);
+        List<Integer> categoriaIdsDondeCompite =
+                compositionRepository.findCategoriaIdsDondeCompiteEmpresa(empresaId, anio, mes);
+        if (categoriaIdsDondeCompite.isEmpty()) {
+            return List.of();
+        }
+
+        List<MarketShareCompositionRepository.CompositionRow> rows = compositionRepository.findComposicionPorPeriodo(
+                anio, mes, categoriaIdsDondeCompite, marcaId, categoriaId, departamentoId);
 
         List<String> empresaIds = rows.stream()
                 .map(MarketShareCompositionRepository.CompositionRow::getEmpresaId)

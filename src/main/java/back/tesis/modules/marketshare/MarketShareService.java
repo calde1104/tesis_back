@@ -23,8 +23,11 @@ public class MarketShareService {
             List<Integer> anios, List<Integer> meses) {
         List<VentaMensualMarketShareRepository.PeriodoUnidadesRow> filasEmpresa =
                 repository.findUnidadesEmpresaPorPeriodo(empresaId, marcaId, categoriaId, departamentoId, anios, meses);
-        Map<String, Long> unidadesMercadoPorPeriodo =
-                repository.findUnidadesMercadoPorPeriodo(empresaId, marcaId, categoriaId, departamentoId, anios, meses)
+
+        List<Integer> categoriaIds = resolverCategoriaIdsDeMercado(empresaId, marcaId, categoriaId, anios, meses);
+        Map<String, Long> unidadesMercadoPorPeriodo = categoriaIds.isEmpty()
+                ? Map.of()
+                : repository.findUnidadesMercadoPorPeriodo(categoriaIds, departamentoId, anios, meses)
                         .stream()
                         .collect(Collectors.toMap(
                                 row -> clavePeriodo(row.getAnio(), row.getMes()),
@@ -39,6 +42,17 @@ public class MarketShareService {
                     return new MarketShareOverviewPointDto(row.getAnio(), row.getMes(), pct);
                 })
                 .toList();
+    }
+
+    private List<Integer> resolverCategoriaIdsDeMercado(
+            String empresaId, String marcaId, Integer categoriaId, List<Integer> anios, List<Integer> meses) {
+        if (marcaId != null) {
+            return repository.findCategoriaIdsForMarca(marcaId);
+        }
+        if (categoriaId != null) {
+            return List.of(categoriaId);
+        }
+        return repository.findCategoriaIdsDondeCompiteEmpresa(empresaId, anios, meses);
     }
 
     private static String clavePeriodo(int anio, int mes) {
@@ -56,8 +70,15 @@ public class MarketShareService {
 
     public Double getMarketShareUnidadesPromedioPorPeriodo(String empresaId, int anio, int mes) {
         Long unidadesEmpresa = repository.sumUnidadesEmpresaPorPeriodo(empresaId, anio, mes);
-        Long unidadesMercado = repository.sumUnidadesMercadoPorPeriodo(empresaId, anio, mes);
-        if (unidadesEmpresa == null || unidadesMercado == null || unidadesMercado == 0) {
+        if (unidadesEmpresa == null) {
+            return null;
+        }
+        List<Integer> categoriaIds = repository.findCategoriaIdsDondeCompiteEmpresaEnPeriodo(empresaId, anio, mes);
+        if (categoriaIds.isEmpty()) {
+            return null;
+        }
+        Long unidadesMercado = repository.sumUnidadesMercadoPorPeriodo(anio, mes, categoriaIds);
+        if (unidadesMercado == null || unidadesMercado == 0) {
             return null;
         }
         return 100.0 * unidadesEmpresa / unidadesMercado;

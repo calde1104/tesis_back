@@ -19,9 +19,11 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -131,7 +133,8 @@ class DashboardServiceTest {
     void getMarketShareCompositionPassesEmpresaIdToRepositoryToScopeByCategorias() {
         MarketShareCompositionRepository.CompositionRow row1 = compositionRow("emp-1", 25L);
         MarketShareCompositionRepository.CompositionRow row2 = compositionRow("emp-2", 75L);
-        when(compositionRepository.findComposicionPorPeriodo("emp-1", 2024, 3, null, null, null))
+        when(compositionRepository.findCategoriaIdsDondeCompiteEmpresa("emp-1", 2024, 3)).thenReturn(List.of(10));
+        when(compositionRepository.findComposicionPorPeriodo(2024, 3, List.of(10), null, null, null))
                 .thenReturn(List.of(row1, row2));
         when(empresaRepository.findAllById(List.of("emp-1", "emp-2"))).thenReturn(List.of());
 
@@ -143,6 +146,17 @@ class DashboardServiceTest {
         assertThat(result.get(1).marketShareUnidadesPromedio()).isEqualTo(75.0);
     }
 
+    @Test
+    void getMarketShareCompositionReturnsEmptyWhenEmpresaHasNoCategoriasResueltas() {
+        when(compositionRepository.findCategoriaIdsDondeCompiteEmpresa("emp-1", 2024, 3)).thenReturn(List.of());
+
+        var result = newService().getMarketShareComposition("emp-1", 2024, 3, null, null, null);
+
+        assertThat(result).isEmpty();
+        verify(compositionRepository, never()).findComposicionPorPeriodo(
+                anyInt(), anyInt(), any(), any(), any(), any());
+    }
+
     private static MarketShareCompositionRepository.CompositionRow compositionRow(String empresaId, long totalUnidades) {
         return new MarketShareCompositionRepository.CompositionRow() {
             public String getEmpresaId() { return empresaId; }
@@ -152,13 +166,14 @@ class DashboardServiceTest {
 
     @Test
     void getMarketShareCompositionPassesFiltersThroughToRepository() {
-        when(compositionRepository.findComposicionPorPeriodo("emp-1", 2024, 3, "marca-1", 10, 5))
+        when(compositionRepository.findCategoriaIdsDondeCompiteEmpresa("emp-1", 2024, 3)).thenReturn(List.of(10));
+        when(compositionRepository.findComposicionPorPeriodo(2024, 3, List.of(10), "marca-1", 10, 5))
                 .thenReturn(List.of());
         when(empresaRepository.findAllById(List.of())).thenReturn(List.of());
 
         newService().getMarketShareComposition("emp-1", 2024, 3, "marca-1", 10, 5);
 
-        verify(compositionRepository).findComposicionPorPeriodo("emp-1", 2024, 3, "marca-1", 10, 5);
+        verify(compositionRepository).findComposicionPorPeriodo(2024, 3, List.of(10), "marca-1", 10, 5);
     }
 
     @Test

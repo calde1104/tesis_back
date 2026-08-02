@@ -43,35 +43,46 @@ public interface VentaMensualMarketShareRepository extends JpaRepository<VentaMe
             @Param("meses") List<Integer> meses);
 
     @Query("""
+            SELECT DISTINCT pv.categoria.id FROM ProductoVersion pv
+            WHERE pv.vigenciaHasta IS NULL
+              AND pv.producto.id IN (SELECT p.id FROM Producto p WHERE p.marcaId = :marcaId)
+            """)
+    List<Integer> findCategoriaIdsForMarca(@Param("marcaId") String marcaId);
+
+    @Query("""
+            SELECT DISTINCT pv.categoria.id
+            FROM ProductoVersion pv
+            WHERE pv.vigenciaHasta IS NULL
+              AND pv.producto.id IN (
+                  SELECT DISTINCT v.productoId FROM VentaMensual v
+                  WHERE v.empresaId = :empresaId
+                    AND (:anios IS NULL OR v.anio IN :anios)
+                    AND (:meses IS NULL OR v.mes IN :meses)
+              )
+            """)
+    List<Integer> findCategoriaIdsDondeCompiteEmpresa(
+            @Param("empresaId") String empresaId,
+            @Param("anios") List<Integer> anios,
+            @Param("meses") List<Integer> meses);
+
+    @Query("""
+            SELECT DISTINCT pv.categoria.id
+            FROM ProductoVersion pv
+            WHERE pv.vigenciaHasta IS NULL
+              AND pv.producto.id IN (
+                  SELECT DISTINCT v.productoId FROM VentaMensual v
+                  WHERE v.empresaId = :empresaId AND v.anio = :anio AND v.mes = :mes
+              )
+            """)
+    List<Integer> findCategoriaIdsDondeCompiteEmpresaEnPeriodo(
+            @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes);
+
+    @Query("""
             SELECT v.anio AS anio, v.mes AS mes, SUM(v.unidadesVendidas) AS totalUnidades
             FROM VentaMensual v
-            WHERE (
-                  (:marcaId IS NOT NULL AND v.productoId IN (
-                      SELECT pv.producto.id FROM ProductoVersion pv
-                      WHERE pv.vigenciaHasta IS NULL
-                        AND pv.categoria.id IN (
-                            SELECT DISTINCT pv2.categoria.id FROM ProductoVersion pv2
-                            WHERE pv2.vigenciaHasta IS NULL
-                              AND pv2.producto.id IN (SELECT p.id FROM Producto p WHERE p.marcaId = :marcaId)
-                        )
-                  ))
-                  OR (:marcaId IS NULL AND :categoriaId IS NOT NULL AND v.productoId IN (
-                      SELECT pv.producto.id FROM ProductoVersion pv
-                      WHERE pv.vigenciaHasta IS NULL AND pv.categoria.id = :categoriaId
-                  ))
-                  OR (:marcaId IS NULL AND :categoriaId IS NULL AND v.productoId IN (
-                      SELECT pv.producto.id FROM ProductoVersion pv
-                      WHERE pv.vigenciaHasta IS NULL
-                        AND pv.categoria.id IN (
-                            SELECT DISTINCT pv2.categoria.id
-                            FROM ProductoVersion pv2
-                            WHERE pv2.vigenciaHasta IS NULL
-                              AND pv2.producto.id IN (
-                                  SELECT DISTINCT v2.productoId FROM VentaMensual v2
-                                  WHERE v2.empresaId = :empresaId AND v2.anio = v.anio AND v2.mes = v.mes
-                              )
-                        )
-                  ))
+            WHERE v.productoId IN (
+                  SELECT pv.producto.id FROM ProductoVersion pv
+                  WHERE pv.vigenciaHasta IS NULL AND pv.categoria.id IN :categoriaIds
               )
               AND (:departamentoId IS NULL OR v.productoId IN (
                   SELECT pv.producto.id FROM ProductoVersion pv WHERE pv.categoria.departamento.id = :departamentoId
@@ -82,9 +93,7 @@ public interface VentaMensualMarketShareRepository extends JpaRepository<VentaMe
             ORDER BY v.anio, v.mes
             """)
     List<PeriodoUnidadesRow> findUnidadesMercadoPorPeriodo(
-            @Param("empresaId") String empresaId,
-            @Param("marcaId") String marcaId,
-            @Param("categoriaId") Integer categoriaId,
+            @Param("categoriaIds") List<Integer> categoriaIds,
             @Param("departamentoId") Integer departamentoId,
             @Param("anios") List<Integer> anios,
             @Param("meses") List<Integer> meses);
@@ -103,20 +112,11 @@ public interface VentaMensualMarketShareRepository extends JpaRepository<VentaMe
             WHERE v.anio = :anio AND v.mes = :mes
               AND v.productoId IN (
                   SELECT pv.producto.id FROM ProductoVersion pv
-                  WHERE pv.vigenciaHasta IS NULL
-                    AND pv.categoria.id IN (
-                        SELECT DISTINCT pv2.categoria.id
-                        FROM ProductoVersion pv2
-                        WHERE pv2.vigenciaHasta IS NULL
-                          AND pv2.producto.id IN (
-                              SELECT DISTINCT v2.productoId FROM VentaMensual v2
-                              WHERE v2.empresaId = :empresaId AND v2.anio = :anio AND v2.mes = :mes
-                          )
-                    )
+                  WHERE pv.vigenciaHasta IS NULL AND pv.categoria.id IN :categoriaIds
               )
             """)
     Long sumUnidadesMercadoPorPeriodo(
-            @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes);
+            @Param("anio") int anio, @Param("mes") int mes, @Param("categoriaIds") List<Integer> categoriaIds);
 
     interface PriceGapRow {
         String getProductoId();

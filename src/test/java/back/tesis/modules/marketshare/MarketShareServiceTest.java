@@ -8,6 +8,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,7 +24,8 @@ class MarketShareServiceTest {
     void getOverviewComputesPesoRealDividiendoUnidadesEmpresaSobreMercado() {
         when(repository.findUnidadesEmpresaPorPeriodo("emp-1", null, null, null, null, null))
                 .thenReturn(List.of(periodoRow(2024, 3, 25L)));
-        when(repository.findUnidadesMercadoPorPeriodo("emp-1", null, null, null, null, null))
+        when(repository.findCategoriaIdsDondeCompiteEmpresa("emp-1", null, null)).thenReturn(List.of(10));
+        when(repository.findUnidadesMercadoPorPeriodo(List.of(10), null, null, null))
                 .thenReturn(List.of(periodoRow(2024, 3, 100L)));
 
         MarketShareService service = new MarketShareService(repository);
@@ -34,32 +38,47 @@ class MarketShareServiceTest {
     }
 
     @Test
-    void getOverviewReturnsNullPctWhenMercadoDataMissingForThatPeriodo() {
+    void getOverviewReturnsNullPctWhenEmpresaHasNoCategoriasResueltas() {
         when(repository.findUnidadesEmpresaPorPeriodo("emp-1", null, null, null, null, null))
                 .thenReturn(List.of(periodoRow(2024, 3, 25L)));
-        when(repository.findUnidadesMercadoPorPeriodo("emp-1", null, null, null, null, null))
-                .thenReturn(List.of());
+        when(repository.findCategoriaIdsDondeCompiteEmpresa("emp-1", null, null)).thenReturn(List.of());
 
         MarketShareService service = new MarketShareService(repository);
 
         var result = service.getOverview("emp-1", null, null, null, null, null);
 
         assertThat(result.get(0).marketShareUnidadesPromedio()).isNull();
+        verify(repository, never()).findUnidadesMercadoPorPeriodo(any(), any(), any(), any());
     }
 
     @Test
-    void getOverviewPassesFiltersThroughToRepository() {
-        when(repository.findUnidadesEmpresaPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
+    void getOverviewResolvesCategoriaScopeFromMarcaIdWhenGiven() {
+        when(repository.findUnidadesEmpresaPorPeriodo("emp-1", "marca-1", null, 5, List.of(2023, 2024), List.of(1, 2)))
                 .thenReturn(List.of());
-        when(repository.findUnidadesMercadoPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2)))
+        when(repository.findCategoriaIdsForMarca("marca-1")).thenReturn(List.of(10, 20));
+        when(repository.findUnidadesMercadoPorPeriodo(List.of(10, 20), 5, List.of(2023, 2024), List.of(1, 2)))
                 .thenReturn(List.of());
 
         MarketShareService service = new MarketShareService(repository);
 
-        service.getOverview("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
+        service.getOverview("emp-1", "marca-1", null, 5, List.of(2023, 2024), List.of(1, 2));
 
-        verify(repository).findUnidadesEmpresaPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
-        verify(repository).findUnidadesMercadoPorPeriodo("emp-1", "marca-1", 10, 5, List.of(2023, 2024), List.of(1, 2));
+        verify(repository).findCategoriaIdsForMarca("marca-1");
+        verify(repository).findUnidadesMercadoPorPeriodo(List.of(10, 20), 5, List.of(2023, 2024), List.of(1, 2));
+    }
+
+    @Test
+    void getOverviewResolvesCategoriaScopeFromCategoriaIdWhenGivenWithoutMarcaId() {
+        when(repository.findUnidadesEmpresaPorPeriodo("emp-1", null, 10, 5, List.of(2023), List.of(1)))
+                .thenReturn(List.of());
+        when(repository.findUnidadesMercadoPorPeriodo(List.of(10), 5, List.of(2023), List.of(1)))
+                .thenReturn(List.of());
+
+        MarketShareService service = new MarketShareService(repository);
+
+        service.getOverview("emp-1", null, 10, 5, List.of(2023), List.of(1));
+
+        verify(repository).findUnidadesMercadoPorPeriodo(List.of(10), 5, List.of(2023), List.of(1));
     }
 
     @Test
@@ -77,7 +96,8 @@ class MarketShareServiceTest {
     @Test
     void getMarketShareUnidadesPromedioPorPeriodoComputesPesoReal() {
         when(repository.sumUnidadesEmpresaPorPeriodo("emp-1", 2024, 3)).thenReturn(25L);
-        when(repository.sumUnidadesMercadoPorPeriodo("emp-1", 2024, 3)).thenReturn(100L);
+        when(repository.findCategoriaIdsDondeCompiteEmpresaEnPeriodo("emp-1", 2024, 3)).thenReturn(List.of(10));
+        when(repository.sumUnidadesMercadoPorPeriodo(2024, 3, List.of(10))).thenReturn(100L);
 
         MarketShareService service = new MarketShareService(repository);
 
@@ -87,11 +107,23 @@ class MarketShareServiceTest {
     @Test
     void getMarketShareUnidadesPromedioPorPeriodoReturnsNullWithoutMercadoData() {
         when(repository.sumUnidadesEmpresaPorPeriodo("emp-1", 2024, 3)).thenReturn(25L);
-        when(repository.sumUnidadesMercadoPorPeriodo("emp-1", 2024, 3)).thenReturn(null);
+        when(repository.findCategoriaIdsDondeCompiteEmpresaEnPeriodo("emp-1", 2024, 3)).thenReturn(List.of(10));
+        when(repository.sumUnidadesMercadoPorPeriodo(2024, 3, List.of(10))).thenReturn(null);
 
         MarketShareService service = new MarketShareService(repository);
 
         assertThat(service.getMarketShareUnidadesPromedioPorPeriodo("emp-1", 2024, 3)).isNull();
+    }
+
+    @Test
+    void getMarketShareUnidadesPromedioPorPeriodoReturnsNullWhenEmpresaHasNoCategoriasResueltas() {
+        when(repository.sumUnidadesEmpresaPorPeriodo("emp-1", 2024, 3)).thenReturn(25L);
+        when(repository.findCategoriaIdsDondeCompiteEmpresaEnPeriodo("emp-1", 2024, 3)).thenReturn(List.of());
+
+        MarketShareService service = new MarketShareService(repository);
+
+        assertThat(service.getMarketShareUnidadesPromedioPorPeriodo("emp-1", 2024, 3)).isNull();
+        verify(repository, never()).sumUnidadesMercadoPorPeriodo(anyInt(), anyInt(), any());
     }
 
     @Test
