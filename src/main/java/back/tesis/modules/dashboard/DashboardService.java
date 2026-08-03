@@ -66,7 +66,7 @@ public class DashboardService {
     public List<?> getShareOfAssortmentRanking(
             String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId,
             Integer anioDesde) {
-        if (marcaId != null || categoriaId != null) {
+        if (marcaId != null) {
             return getShareOfAssortmentPorMarca(anio, mes, marcaId, categoriaId, departamentoId, anioDesde);
         }
 
@@ -85,7 +85,7 @@ public class DashboardService {
         }
 
         List<String> productosActivosPropios = assortmentRepository.findActiveProductoIds(
-                empresaId, cutoffAnio, cutoffMes, anio, mes, null, null, departamentoId);
+                empresaId, cutoffAnio, cutoffMes, anio, mes, null, categoriaId, departamentoId);
         if (productosActivosPropios.isEmpty()) {
             return List.of();
         }
