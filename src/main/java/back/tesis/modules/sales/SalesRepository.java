@@ -56,7 +56,6 @@ public interface SalesRepository extends JpaRepository<VentaMensual, Long> {
                   WHERE LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%'))
                      OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))
               ))
-            ORDER BY v.anio DESC, v.mes DESC
             """)
     Page<SaleRow> findSales(
             @Param("empresaId") String empresaId,

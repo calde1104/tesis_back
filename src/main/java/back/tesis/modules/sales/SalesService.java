@@ -7,7 +7,9 @@ import back.tesis.dto.sales.SalesFilterOptionsDto;
 import back.tesis.dto.sales.SalesSummaryDto;
 import back.tesis.mapper.sales.SalesMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -38,7 +40,11 @@ public class SalesService {
             String marcaId, Integer categoriaId, Integer departamentoId, String search,
             Pageable pageable
     ) {
-        return salesRepository.findSales(empresaId, anios, meses, marcaId, categoriaId, departamentoId, search, pageable)
+        Pageable effectivePageable = pageable.getSort().isSorted()
+                ? pageable
+                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                        Sort.by(Sort.Direction.DESC, "anio", "mes"));
+        return salesRepository.findSales(empresaId, anios, meses, marcaId, categoriaId, departamentoId, search, effectivePageable)
                 .map(SalesMapper::toDto);
     }
 
