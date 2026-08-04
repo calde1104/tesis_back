@@ -1,5 +1,6 @@
 package back.tesis.modules.marketshare;
 
+import back.tesis.dto.marketshare.CategoriaMarketShareSummaryDto;
 import back.tesis.dto.marketshare.MarketShareOverviewPointDto;
 import back.tesis.dto.marketshare.PriceGapDto;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,5 +43,14 @@ public class MarketShareController {
             @RequestParam(required = false) List<Integer> meses
     ) {
         return marketShareService.getPriceGap(empresaId, marcaId, categoriaId, departamentoId, anios, meses);
+    }
+
+    @GetMapping("/categories-summary")
+    public List<CategoriaMarketShareSummaryDto> getCategoriesSummary(
+            @PathVariable String empresaId,
+            @RequestParam int anio,
+            @RequestParam int mes,
+            @RequestParam(required = false) Integer departamentoId) {
+        return marketShareService.getCategoriesSummary(empresaId, anio, mes, departamentoId);
     }
 }

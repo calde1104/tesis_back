@@ -1,5 +1,7 @@
 package back.tesis.modules.marketshare;
 
+import back.tesis.dto.marketshare.CategoriaMarketShareSummaryDto;
+import back.tesis.dto.marketshare.EmpresaShareDto;
 import back.tesis.dto.marketshare.MarketShareOverviewPointDto;
 import back.tesis.security.AccessLogService;
 import back.tesis.security.JwtService;
@@ -68,5 +70,21 @@ class MarketShareControllerTest {
                         .param("anios", "2023", "2024")
                         .param("meses", "1", "2"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void getCategoriesSummaryReturnsOkWithBreakdown() throws Exception {
+        when(marketShareService.getCategoriesSummary("emp-1", 2024, 3, null)).thenReturn(List.of(
+                new CategoriaMarketShareSummaryDto("Whiskyes", 15.4, List.of(
+                        new EmpresaShareDto("Pernod Ricard", 40.5),
+                        new EmpresaShareDto("Nuestra Empresa", 15.4)))));
+
+        mockMvc.perform(get("/v1/emp-1/market-share/categories-summary")
+                        .param("anio", "2024")
+                        .param("mes", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].categoria").value("Whiskyes"))
+                .andExpect(jsonPath("$[0].nuestraCuota").value(15.4))
+                .andExpect(jsonPath("$[0].rankingCompetencia[0].empresaNombre").value("Pernod Ricard"));
     }
 }

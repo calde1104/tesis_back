@@ -78,6 +78,41 @@ public interface VentaMensualMarketShareRepository extends JpaRepository<VentaMe
             @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes);
 
     @Query("""
+            SELECT DISTINCT pv.categoria.id
+            FROM ProductoVersion pv
+            WHERE pv.vigenciaHasta IS NULL
+              AND pv.producto.id IN (
+                  SELECT DISTINCT v.productoId FROM VentaMensual v
+                  WHERE v.empresaId = :empresaId AND v.anio = :anio AND v.mes = :mes
+              )
+              AND (:departamentoId IS NULL OR pv.categoria.departamento.id = :departamentoId)
+            """)
+    List<Integer> findCategoriaIdsDondeCompiteEmpresaEnPeriodo(
+            @Param("empresaId") String empresaId, @Param("anio") int anio, @Param("mes") int mes,
+            @Param("departamentoId") Integer departamentoId);
+
+    interface CategoriaEmpresaUnidadesRow {
+        Integer getCategoriaId();
+        String getEmpresaId();
+        Long getTotalUnidades();
+    }
+
+    @Query("""
+            SELECT pv.categoria.id AS categoriaId, v.empresaId AS empresaId, SUM(v.unidadesVendidas) AS totalUnidades
+            FROM VentaMensual v, ProductoVersion pv
+            WHERE v.productoId = pv.producto.id
+              AND pv.vigenciaHasta IS NULL
+              AND v.anio = :anio AND v.mes = :mes
+              AND pv.categoria.id IN :categoriaIds
+              AND (:departamentoId IS NULL OR pv.categoria.departamento.id = :departamentoId)
+            GROUP BY pv.categoria.id, v.empresaId
+            """)
+    List<CategoriaEmpresaUnidadesRow> findUnidadesPorCategoriaYEmpresa(
+            @Param("anio") int anio, @Param("mes") int mes,
+            @Param("categoriaIds") List<Integer> categoriaIds,
+            @Param("departamentoId") Integer departamentoId);
+
+    @Query("""
             SELECT v.anio AS anio, v.mes AS mes, SUM(v.unidadesVendidas) AS totalUnidades
             FROM VentaMensual v
             WHERE v.productoId IN (
