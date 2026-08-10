@@ -2,6 +2,7 @@ package back.tesis.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -19,6 +20,13 @@ public class Usuario extends UuidEntity {
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    @Lob
+    @Column(name = "foto_perfil")
+    private byte[] fotoPerfil;
+
+    @Column(name = "foto_perfil_tipo")
+    private String fotoPerfilTipo;
 
     protected Usuario() {
     }
@@ -44,5 +52,23 @@ public class Usuario extends UuidEntity {
 
     public String getPasswordHash() {
         return passwordHash;
+    }
+
+    public byte[] getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public String getFotoPerfilTipo() {
+        return fotoPerfilTipo;
+    }
+
+    public void actualizarFoto(byte[] fotoPerfil, String fotoPerfilTipo) {
+        this.fotoPerfil = fotoPerfil;
+        this.fotoPerfilTipo = fotoPerfilTipo;
+    }
+
+    public void quitarFoto() {
+        this.fotoPerfil = null;
+        this.fotoPerfilTipo = null;
     }
 }
