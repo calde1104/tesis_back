@@ -23,7 +23,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -83,8 +82,21 @@ class ProfileServiceTest {
     }
 
     @Test
+    void updateFotoAceptaArchivoDeExactamente2MB() throws Exception {
+        stubLookups();
+        byte[] limite = new byte[2 * 1024 * 1024];
+        MultipartFile file = new MockMultipartFile(
+                "file", "avatar.png", "image/png", limite);
+
+        service.updateFoto("user-1", file);
+
+        assertThat(usuario.getFotoPerfil()).hasSize(2 * 1024 * 1024);
+        assertThat(usuario.getFotoPerfilTipo()).isEqualTo("image/png");
+        verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
     void updateFotoRechazaTipoInvalido() {
-        lenient().when(usuarioRepository.findById("user-1")).thenReturn(Optional.of(usuario));
         MultipartFile file = new MockMultipartFile(
                 "file", "doc.pdf", "application/pdf", new byte[]{1});
 
@@ -95,7 +107,6 @@ class ProfileServiceTest {
 
     @Test
     void updateFotoRechazaArchivoVacio() {
-        lenient().when(usuarioRepository.findById("user-1")).thenReturn(Optional.of(usuario));
         MultipartFile file = new MockMultipartFile(
                 "file", "avatar.png", "image/png", new byte[]{});
 
@@ -106,7 +117,6 @@ class ProfileServiceTest {
 
     @Test
     void updateFotoRechazaArchivoMayorA2MB() {
-        lenient().when(usuarioRepository.findById("user-1")).thenReturn(Optional.of(usuario));
         byte[] grande = new byte[2 * 1024 * 1024 + 1];
         MultipartFile file = new MockMultipartFile(
                 "file", "avatar.png", "image/png", grande);

@@ -59,8 +59,10 @@ public class ProfileService {
 
     public void deleteFoto(String usuarioId) {
         Usuario usuario = cargarUsuario(usuarioId);
-        usuario.quitarFoto();
-        usuarioRepository.save(usuario);
+        if (usuario.getFotoPerfil() != null) {
+            usuario.quitarFoto();
+            usuarioRepository.save(usuario);
+        }
     }
 
     private void validar(MultipartFile file) {

@@ -23,7 +23,7 @@ public final class ProfileMapper {
 
     private static String fotoDataUri(Usuario usuario) {
         byte[] bytes = usuario.getFotoPerfil();
-        if (bytes == null || bytes.length == 0) {
+        if (bytes == null || bytes.length == 0 || usuario.getFotoPerfilTipo() == null) {
             return null;
         }
         String base64 = Base64.getEncoder().encodeToString(bytes);
