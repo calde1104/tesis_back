@@ -6,6 +6,8 @@ import back.tesis.entities.ConfigSistema;
 import back.tesis.mapper.config.ConfigMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class ConfigService {
 
@@ -13,6 +15,12 @@ public class ConfigService {
 
     public ConfigService(ConfigSistemaRepository repository) {
         this.repository = repository;
+    }
+
+    public List<ConfigResponseDto> getConfig(String empresaId) {
+        return repository.findByEmpresaIdOrderByParametroAsc(empresaId).stream()
+                .map(ConfigMapper::toDto)
+                .toList();
     }
 
     public ConfigResponseDto setParametro(String empresaId, SetConfigRequest request) {

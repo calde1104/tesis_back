@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,5 +82,32 @@ class ConfigServiceTest {
         assertThat(result.productoId()).isEqualTo("prod-A");
         verify(repository, org.mockito.Mockito.never())
                 .findByEmpresaIdAndProductoIdAndParametro("emp-1", null, "umbral_stock");
+    }
+
+    @Test
+    void getConfigReturnsAllConfigsOfEmpresaAsDto() {
+        when(repository.findByEmpresaIdOrderByParametroAsc("emp-1")).thenReturn(List.of(
+                new ConfigSistema("emp-1", null, "umbral_stock", "100"),
+                new ConfigSistema("emp-1", "prod-A", "umbral_stock", "20")));
+
+        ConfigService service = new ConfigService(repository);
+
+        var result = service.getConfig("emp-1");
+
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(dto -> dto.productoId()).containsExactly(null, "prod-A");
+        assertThat(result).allSatisfy(dto -> {
+            assertThat(dto.empresaId()).isEqualTo("emp-1");
+            assertThat(dto.parametro()).isEqualTo("umbral_stock");
+        });
+    }
+
+    @Test
+    void getConfigReturnsEmptyListWhenEmpresaHasNoConfig() {
+        when(repository.findByEmpresaIdOrderByParametroAsc("emp-1")).thenReturn(List.of());
+
+        ConfigService service = new ConfigService(repository);
+
+        assertThat(service.getConfig("emp-1")).isEmpty();
     }
 }
