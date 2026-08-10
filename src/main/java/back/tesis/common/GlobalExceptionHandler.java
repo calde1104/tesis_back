@@ -6,6 +6,7 @@ import back.tesis.common.exceptions.InvalidFileException;
 import back.tesis.common.exceptions.ResourceNotFoundException;
 import back.tesis.common.exceptions.TenantMismatchException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -42,6 +43,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidFileException.class)
     public ResponseEntity<ApiError> handleInvalidFile(InvalidFileException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT,
+                "La operacion viola una restriccion de integridad de datos "
+                        + "(referencia inexistente o registro duplicado)",
+                request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
