@@ -2,12 +2,11 @@ package back.tesis.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "usuarios")
-public class Usuario extends UuidEntity {
+public class Usuario extends UuidEntity implements UsuarioAuth {
 
     @Column(name = "id_empresa", nullable = false)
     private String empresaId;
@@ -21,8 +20,7 @@ public class Usuario extends UuidEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Lob
-    @Column(name = "foto_perfil")
+    @Column(name = "foto_perfil", length = 16_777_215)
     private byte[] fotoPerfil;
 
     @Column(name = "foto_perfil_tipo")

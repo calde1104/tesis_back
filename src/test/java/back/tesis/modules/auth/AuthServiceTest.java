@@ -7,6 +7,7 @@ import back.tesis.entities.Empresa;
 import back.tesis.entities.EmpresaRepository;
 import back.tesis.entities.Rol;
 import back.tesis.entities.Usuario;
+import back.tesis.entities.UsuarioAuth;
 import back.tesis.security.JwtService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +44,7 @@ class AuthServiceTest {
         Rol rol = newRol(1, "ADMIN");
         Empresa empresa = newEmpresa("emp-1", "Acme", "800123456");
 
-        when(usuarioRepository.findByEmail("user@test.com")).thenReturn(List.of(usuario));
+        when(usuarioRepository.findByEmail("user@test.com")).thenReturn(List.<UsuarioAuth>of(usuario));
         when(passwordEncoder.matches("plain", "hashed")).thenReturn(true);
         when(rolRepository.findById(1)).thenReturn(Optional.of(rol));
         when(empresaRepository.findById("emp-1")).thenReturn(Optional.of(empresa));
@@ -61,7 +62,7 @@ class AuthServiceTest {
     @Test
     void loginFailsWithWrongPassword() throws Exception {
         Usuario usuario = newUsuario("emp-1", 1, "user@test.com", "hashed");
-        when(usuarioRepository.findByEmail("user@test.com")).thenReturn(List.of(usuario));
+        when(usuarioRepository.findByEmail("user@test.com")).thenReturn(List.<UsuarioAuth>of(usuario));
         when(passwordEncoder.matches("wrong", "hashed")).thenReturn(false);
 
         AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
@@ -72,7 +73,7 @@ class AuthServiceTest {
 
     @Test
     void loginFailsWhenUserNotFoundByEmail() {
-        when(usuarioRepository.findByEmail("nadie@test.com")).thenReturn(List.of());
+        when(usuarioRepository.findByEmail("nadie@test.com")).thenReturn(List.<UsuarioAuth>of());
 
         AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
 
@@ -83,7 +84,7 @@ class AuthServiceTest {
     @Test
     void loginOnNotFoundStillRunsPasswordEncoderAgainstDummyHash() {
         String dummyHash = "$2a$10$ZHr6kd8e.5Jya9pKNccDdu5v1N6LATjajPEiHFAv6C4jq0w80fiG6";
-        when(usuarioRepository.findByEmail("nadie@test.com")).thenReturn(List.of());
+        when(usuarioRepository.findByEmail("nadie@test.com")).thenReturn(List.<UsuarioAuth>of());
 
         AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
 
@@ -97,7 +98,7 @@ class AuthServiceTest {
     void loginFailsWithConflictWhenEmailBelongsToMultipleEmpresas() throws Exception {
         Usuario usuario1 = newUsuario("emp-1", 1, "duplicado@test.com", "hashed1");
         Usuario usuario2 = newUsuario("emp-2", 1, "duplicado@test.com", "hashed2");
-        when(usuarioRepository.findByEmail("duplicado@test.com")).thenReturn(List.of(usuario1, usuario2));
+        when(usuarioRepository.findByEmail("duplicado@test.com")).thenReturn(List.<UsuarioAuth>of(usuario1, usuario2));
 
         AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
 

@@ -3,7 +3,6 @@ package back.tesis.mapper.auth;
 import back.tesis.dto.auth.EmpresaResumenDto;
 import back.tesis.dto.auth.LoginResponse;
 import back.tesis.entities.Empresa;
-import back.tesis.entities.Usuario;
 
 public final class AuthMapper {
 
@@ -14,7 +13,7 @@ public final class AuthMapper {
         return new EmpresaResumenDto(entity.getId(), entity.getNombre(), entity.getCuit());
     }
 
-    public static LoginResponse toDto(Usuario usuario, String rolNombre, EmpresaResumenDto empresa, String token) {
-        return new LoginResponse(token, usuario.getId(), rolNombre, empresa);
+    public static LoginResponse toDto(String usuarioId, String rolNombre, EmpresaResumenDto empresa, String token) {
+        return new LoginResponse(token, usuarioId, rolNombre, empresa);
     }
 }

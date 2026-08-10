@@ -8,7 +8,7 @@ import back.tesis.dto.auth.LoginResponse;
 import back.tesis.entities.Empresa;
 import back.tesis.entities.EmpresaRepository;
 import back.tesis.entities.Rol;
-import back.tesis.entities.Usuario;
+import back.tesis.entities.UsuarioAuth;
 import back.tesis.mapper.auth.AuthMapper;
 import back.tesis.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,14 +44,14 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        List<Usuario> candidatos = usuarioRepository.findByEmail(request.email());
+        List<UsuarioAuth> candidatos = usuarioRepository.findByEmail(request.email());
 
         if (candidatos.size() > 1) {
             throw new ConflictException(
                     "Este email esta asociado a mas de una empresa; contacta al administrador");
         }
 
-        Optional<Usuario> usuarioOpt = candidatos.stream().findFirst();
+        Optional<UsuarioAuth> usuarioOpt = candidatos.stream().findFirst();
 
         boolean credencialesValidas = usuarioOpt
                 .map(u -> passwordEncoder.matches(request.password(), u.getPasswordHash()))
@@ -64,7 +64,7 @@ public class AuthService {
             throw new InvalidCredentialsException("Credenciales invalidas");
         }
 
-        Usuario usuario = usuarioOpt.get();
+        UsuarioAuth usuario = usuarioOpt.get();
 
         Rol rol = rolRepository.findById(usuario.getRolId())
                 .orElseThrow(() -> new InvalidCredentialsException("Rol de usuario invalido"));
@@ -74,7 +74,7 @@ public class AuthService {
         String token = jwtService.generateToken(usuario.getId(), empresa.getId(), rol.getNombre());
 
         EmpresaResumenDto empresaResumen = AuthMapper.toDto(empresa);
-        return AuthMapper.toDto(usuario, rol.getNombre(), empresaResumen, token);
+        return AuthMapper.toDto(usuario.getId(), rol.getNombre(), empresaResumen, token);
     }
 
     public void logout() {
