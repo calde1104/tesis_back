@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -56,11 +57,12 @@ class SalesServiceTest {
     @Test
     void listSalesFiltersyByMultipleAniosAndMeses() {
         Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageableConSortDefault = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "anio", "mes"));
         SalesRepository.SaleRow row = mockSaleRow();
-        Page<SalesRepository.SaleRow> page = new PageImpl<>(List.of(row), pageable, 1);
+        Page<SalesRepository.SaleRow> page = new PageImpl<>(List.of(row), pageableConSortDefault, 1);
         when(salesRepository.findSales(
                 eq("emp-1"), eq(List.of(2023, 2024)), eq(List.of(3, 4)),
-                isNull(), isNull(), isNull(), isNull(), eq(pageable)))
+                isNull(), isNull(), isNull(), isNull(), eq(pageableConSortDefault)))
                 .thenReturn(page);
 
         SalesService service = new SalesService(salesRepository, marcaRepository, departamentoRepository, categoriaRepository);
@@ -77,10 +79,11 @@ class SalesServiceTest {
     @Test
     void listSalesPassesSearchTermToRepository() {
         Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageableConSortDefault = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "anio", "mes"));
         SalesRepository.SaleRow row = mockSaleRow();
-        Page<SalesRepository.SaleRow> page = new PageImpl<>(List.of(row), pageable, 1);
+        Page<SalesRepository.SaleRow> page = new PageImpl<>(List.of(row), pageableConSortDefault, 1);
         when(salesRepository.findSales(
-                eq("emp-1"), eq(List.of(2024)), isNull(), isNull(), isNull(), isNull(), eq("whisky"), eq(pageable)))
+                eq("emp-1"), eq(List.of(2024)), isNull(), isNull(), isNull(), isNull(), eq("whisky"), eq(pageableConSortDefault)))
                 .thenReturn(page);
 
         SalesService service = new SalesService(salesRepository, marcaRepository, departamentoRepository, categoriaRepository);

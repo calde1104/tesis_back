@@ -66,7 +66,7 @@ public class DashboardService {
     public List<?> getShareOfAssortmentRanking(
             String empresaId, int anio, int mes, String marcaId, Integer categoriaId, Integer departamentoId,
             Integer anioDesde) {
-        if (marcaId != null) {
+        if (marcaId != null || categoriaId != null) {
             return getShareOfAssortmentPorMarca(anio, mes, marcaId, categoriaId, departamentoId, anioDesde);
         }
 

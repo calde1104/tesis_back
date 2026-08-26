@@ -13,9 +13,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.Locale;
 
 @Service
 public class IngestionService {
@@ -45,6 +48,8 @@ public class IngestionService {
 
     public UploadResponseDto upload(String empresaId, MultipartFile file, String granularidad,
                                      LocalDate periodoDesde, LocalDate periodoHasta) {
+        String nombreArchivo = validarNombreArchivo(file.getOriginalFilename());
+        validarContentType(file.getContentType());
         byte[] contenido = readBytes(file);
         String hash = sha256(contenido);
         if (repository.existsByHashSha256(hash)) {
@@ -52,7 +57,7 @@ public class IngestionService {
         }
 
         ArchivoIngesta archivo = new ArchivoIngesta(
-                empresaId, file.getOriginalFilename(), hash, granularidad, periodoDesde, periodoHasta);
+                empresaId, nombreArchivo, hash, granularidad, periodoDesde, periodoHasta);
         ArchivoIngesta saved = repository.save(archivo);
 
         auditoriaIntegridadRepository.save(
@@ -87,6 +92,31 @@ public class IngestionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Archivo de ingesta no encontrado: " + archivoId));
         archivo.setEstado(ArchivoIngesta.ESTADO_ELIMINADO);
         repository.save(archivo);
+    }
+
+    private static final List<String> EXTENSIONES_PERMITIDAS = List.of(".csv", ".xlsx");
+
+    private static final List<String> CONTENT_TYPES_PERMITIDOS = List.of(
+            "text/csv", "application/csv", "text/plain", "application/vnd.ms-excel", "application/octet-stream",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/zip");
+
+    private String validarNombreArchivo(String originalFilename) {
+        if (originalFilename == null || originalFilename.isBlank()) {
+            throw new InvalidFileException("El archivo no tiene nombre");
+        }
+        String nombre = Path.of(originalFilename).getFileName().toString().trim();
+        String nombreLower = nombre.toLowerCase(Locale.ROOT);
+        boolean extensionValida = EXTENSIONES_PERMITIDAS.stream().anyMatch(nombreLower::endsWith);
+        if (!extensionValida) {
+            throw new InvalidFileException("Solo se aceptan archivos .csv o .xlsx (recibido: " + nombre + ")");
+        }
+        return nombre.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
+    private void validarContentType(String contentType) {
+        if (contentType != null && !CONTENT_TYPES_PERMITIDOS.contains(contentType)) {
+            throw new InvalidFileException("Tipo de archivo no permitido: " + contentType);
+        }
     }
 
     private byte[] readBytes(MultipartFile file) {

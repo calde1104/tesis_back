@@ -1,6 +1,7 @@
 package back.tesis.modules.ingestion;
 
 import back.tesis.common.exceptions.ConflictException;
+import back.tesis.common.exceptions.InvalidFileException;
 import back.tesis.common.exceptions.ResourceNotFoundException;
 import back.tesis.dto.ingestion.IngestionHistoryItemDto;
 import back.tesis.entities.ArchivoIngesta;
@@ -76,6 +77,55 @@ class IngestionServiceTest {
 
         verify(fileStorage).save(any(), any());
         verify(processor).procesar(any(), eq("emp-1"), eq("MENSUAL"), any());
+    }
+
+    @Test
+    void uploadRejectsFileWithDisallowedExtension() {
+        MockMultipartFile file = new MockMultipartFile("file", "ventas.txt", "text/plain", "contenido".getBytes());
+
+        IngestionService service = newService();
+
+        assertThatThrownBy(() -> service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31)))
+                .isInstanceOf(InvalidFileException.class);
+        verify(processor, never()).procesar(any(), any(), any(), any());
+    }
+
+    @Test
+    void uploadRejectsDisallowedContentType() {
+        MockMultipartFile file = new MockMultipartFile("file", "ventas.csv", "application/pdf", "contenido".getBytes());
+
+        IngestionService service = newService();
+
+        assertThatThrownBy(() -> service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31)))
+                .isInstanceOf(InvalidFileException.class);
+        verify(processor, never()).procesar(any(), any(), any(), any());
+    }
+
+    @Test
+    void uploadAcceptsXlsxExtension() {
+        MockMultipartFile file = new MockMultipartFile("file", "ventas.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "contenido".getBytes());
+        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IngestionService service = newService();
+        service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
+
+        verify(processor).procesar(any(), eq("emp-1"), eq("MENSUAL"), any());
+    }
+
+    @Test
+    void uploadSanitizesOriginalFilename() {
+        MockMultipartFile file = new MockMultipartFile("file", "../../etc/ventas <script>.csv", "text/csv", "contenido".getBytes());
+        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IngestionService service = newService();
+        service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
+
+        ArgumentCaptor<ArchivoIngesta> captor = ArgumentCaptor.forClass(ArchivoIngesta.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getNombreArchivo()).isEqualTo("ventas__script_.csv");
     }
 
     @Test

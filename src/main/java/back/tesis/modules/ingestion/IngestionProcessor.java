@@ -51,11 +51,14 @@ public class IngestionProcessor {
         List<String> errores = new ArrayList<>();
         int cargadas = 0;
         try {
-            VentasCsvParser.ParseResult parsed = VentasCsvParser.parse(contenido);
+            ParseResult parsed = archivo.getNombreArchivo() != null
+                    && archivo.getNombreArchivo().toLowerCase().endsWith(".xlsx")
+                    ? VentasExcelParser.parse(contenido)
+                    : VentasCsvParser.parse(contenido);
             errores.addAll(parsed.errores());
 
             boolean semanal = GRANULARIDAD_SEMANAL.equalsIgnoreCase(granularidad);
-            for (VentasCsvParser.VentaRow fila : parsed.filas()) {
+            for (VentaRow fila : parsed.filas()) {
                 List<Producto> productos = productoRepository.findBySku(fila.sku());
                 if (productos.size() != 1) {
                     errores.add("Linea " + fila.lineNumber() + ": SKU '" + fila.sku() + "' "
@@ -98,7 +101,7 @@ public class IngestionProcessor {
     }
 
     private int cargarVentaMensual(String archivoId, String empresaId, String productoId,
-                                    VentasCsvParser.VentaRow fila, List<String> errores) {
+                                    VentaRow fila, List<String> errores) {
         if (ventaMensualRepository.existsByProductoIdAndEmpresaIdAndAnioAndMesAndArchivoId(
                 productoId, empresaId, fila.anio(), fila.periodo(), archivoId)) {
             return 1;
@@ -115,7 +118,7 @@ public class IngestionProcessor {
     }
 
     private int cargarVentaSemanal(String archivoId, String empresaId, String productoId,
-                                    VentasCsvParser.VentaRow fila, List<String> errores) {
+                                    VentaRow fila, List<String> errores) {
         if (ventaSemanalRepository.existsByProductoIdAndEmpresaIdAndAnioAndSemanaAndArchivoId(
                 productoId, empresaId, fila.anio(), fila.periodo(), archivoId)) {
             return 1;

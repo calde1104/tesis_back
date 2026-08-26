@@ -15,11 +15,11 @@ class VentasCsvParserTest {
                 SKU-1,2024,3,10,1000.00
                 """;
 
-        VentasCsvParser.ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
+        ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
 
         assertThat(result.errores()).isEmpty();
         assertThat(result.filas()).hasSize(1);
-        VentasCsvParser.VentaRow row = result.filas().get(0);
+        VentaRow row = result.filas().get(0);
         assertThat(row.sku()).isEqualTo("SKU-1");
         assertThat(row.anio()).isEqualTo(2024);
         assertThat(row.periodo()).isEqualTo(3);
@@ -35,7 +35,7 @@ class VentasCsvParserTest {
                 SKU-1,2024,3,10,1000.00,99.99
                 """;
 
-        VentasCsvParser.ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
+        ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
 
         assertThat(result.filas().get(0).precioUnitario()).isEqualByComparingTo("99.99");
     }
@@ -47,7 +47,7 @@ class VentasCsvParserTest {
                 SKU-1,2024,marzo,10,1000.00
                 """;
 
-        VentasCsvParser.ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
+        ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
 
         assertThat(result.filas()).isEmpty();
         assertThat(result.errores()).hasSize(1);
@@ -61,7 +61,7 @@ class VentasCsvParserTest {
                 SKU-1,2024,3
                 """;
 
-        VentasCsvParser.ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
+        ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
 
         assertThat(result.errores()).hasSize(1);
         assertThat(result.errores().get(0)).contains("columnas");
@@ -74,7 +74,7 @@ class VentasCsvParserTest {
                 ,2024,3,10,1000.00
                 """;
 
-        VentasCsvParser.ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
+        ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
 
         assertThat(result.errores()).hasSize(1);
         assertThat(result.errores().get(0)).contains("sku vacio");
@@ -82,7 +82,7 @@ class VentasCsvParserTest {
 
     @Test
     void emptyFileProducesError() {
-        VentasCsvParser.ParseResult result = VentasCsvParser.parse(new byte[0]);
+        ParseResult result = VentasCsvParser.parse(new byte[0]);
 
         assertThat(result.errores()).hasSize(1);
         assertThat(result.filas()).isEmpty();
@@ -92,7 +92,7 @@ class VentasCsvParserTest {
     void ignoresBlankLines() {
         String csv = "sku,anio,mes,unidades_vendidas,monto_facturado\n\nSKU-1,2024,3,10,1000.00\n\n";
 
-        VentasCsvParser.ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
+        ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
 
         assertThat(result.errores()).isEmpty();
         assertThat(result.filas()).hasSize(1);
@@ -105,7 +105,7 @@ class VentasCsvParserTest {
                 SKU-1,2024,3,0,0.00
                 """;
 
-        VentasCsvParser.ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
+        ParseResult result = VentasCsvParser.parse(csv.getBytes(StandardCharsets.UTF_8));
 
         assertThat(result.errores()).isEmpty();
         assertThat(result.filas().get(0).precioUnitario()).isNull();
