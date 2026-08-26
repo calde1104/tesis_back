@@ -23,4 +23,6 @@ public interface ConfigSistemaRepository extends JpaRepository<ConfigSistema, In
             @Param("productoId") String productoId,
             @Param("parametro") String parametro
     );
+
+    List<ConfigSistema> findByParametroAndProductoIdIsNotNull(String parametro);
 }

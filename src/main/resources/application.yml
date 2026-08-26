@@ -29,6 +29,8 @@ app:
     expiration-hours: 12
   ingestion:
     storage-dir: ${INGESTION_STORAGE_DIR:./data/ingestion-uploads}
+  notificaciones:
+    umbral-demanda-cron: ${UMBRAL_DEMANDA_CRON:0 0 6 * * *}
 
 ml:
   service:

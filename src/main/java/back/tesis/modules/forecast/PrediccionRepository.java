@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PrediccionRepository extends JpaRepository<Prediccion, String> {
 
@@ -24,4 +25,7 @@ public interface PrediccionRepository extends JpaRepository<Prediccion, String> 
             @Param("empresaId") String empresaId,
             @Param("modeloId") String modeloId,
             @Param("sku") String sku);
+
+    Optional<Prediccion> findFirstByEmpresaIdAndProductoIdAndModeloIdOrderByAnioAscMesAsc(
+            String empresaId, String productoId, String modeloId);
 }

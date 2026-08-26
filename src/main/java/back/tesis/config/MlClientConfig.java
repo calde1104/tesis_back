@@ -16,7 +16,7 @@ public class MlClientConfig {
     @Bean
     public RestClient mlRestClient(@Value("${ml.service.url}") String mlServiceUrl) {
         HttpClientSettings settings = HttpClientSettings.defaults()
-                .withTimeouts(Duration.ofSeconds(2), Duration.ofSeconds(3));
+                .withTimeouts(Duration.ofSeconds(5), Duration.ofSeconds(30));
         ClientHttpRequestFactory requestFactory = ClientHttpRequestFactoryBuilder.detect().build(settings);
         return RestClient.builder()
                 .baseUrl(mlServiceUrl)
