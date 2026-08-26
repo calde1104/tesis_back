@@ -1,5 +1,7 @@
 package back.tesis.modules.notificaciones;
 
+import back.tesis.common.exceptions.ConflictException;
+import back.tesis.common.exceptions.ResourceNotFoundException;
 import back.tesis.dto.notificaciones.NotificacionDto;
 import back.tesis.entities.ConfigSistema;
 import back.tesis.entities.EventoSistema;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +53,30 @@ public class NotificacionesService {
     public Page<NotificacionDto> listar(String empresaId, Pageable pageable) {
         return eventoRepository.findByEmpresaIdOrderByFechaGeneracionDesc(empresaId, pageable)
                 .map(NotificacionMapper::toDto);
+    }
+
+    public NotificacionDto marcarVista(String empresaId, String id) {
+        EventoSistema evento = buscarDeLaEmpresa(empresaId, id);
+        if (EventoSistema.ESTADO_RESUELTA.equals(evento.getEstado())) {
+            throw new ConflictException("La notificacion ya esta resuelta, no se puede marcar como vista");
+        }
+        evento.setEstado(EventoSistema.ESTADO_VISTA);
+        return NotificacionMapper.toDto(eventoRepository.save(evento));
+    }
+
+    public NotificacionDto marcarResuelta(String empresaId, String id, String usuarioId) {
+        EventoSistema evento = buscarDeLaEmpresa(empresaId, id);
+        if (!EventoSistema.ESTADO_RESUELTA.equals(evento.getEstado())) {
+            evento.setEstado(EventoSistema.ESTADO_RESUELTA);
+            evento.setFechaResolucion(LocalDateTime.now());
+            evento.setResueltoPor(usuarioId);
+        }
+        return NotificacionMapper.toDto(eventoRepository.save(evento));
+    }
+
+    private EventoSistema buscarDeLaEmpresa(String empresaId, String id) {
+        return eventoRepository.findByIdAndEmpresaId(id, empresaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Notificacion no encontrada: " + id));
     }
 
     @Scheduled(cron = "${app.notificaciones.umbral-demanda-cron:0 0 6 * * *}")

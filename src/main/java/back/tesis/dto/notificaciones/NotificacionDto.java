@@ -12,6 +12,8 @@ public record NotificacionDto(
         String severidad,
         @JsonRawValue String payload,
         String estado,
-        LocalDateTime fechaGeneracion
+        LocalDateTime fechaGeneracion,
+        LocalDateTime fechaResolucion,
+        String resueltoPor
 ) {
 }

@@ -82,7 +82,27 @@ public class EventoSistema extends UuidEntity {
         return estado;
     }
 
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
     public LocalDateTime getFechaGeneracion() {
         return fechaGeneracion;
+    }
+
+    public LocalDateTime getFechaResolucion() {
+        return fechaResolucion;
+    }
+
+    public void setFechaResolucion(LocalDateTime fechaResolucion) {
+        this.fechaResolucion = fechaResolucion;
+    }
+
+    public String getResueltoPor() {
+        return resueltoPor;
+    }
+
+    public void setResueltoPor(String resueltoPor) {
+        this.resueltoPor = resueltoPor;
     }
 }

@@ -1,5 +1,7 @@
 package back.tesis.modules.notificaciones;
 
+import back.tesis.common.exceptions.ConflictException;
+import back.tesis.common.exceptions.ResourceNotFoundException;
 import back.tesis.entities.ConfigSistema;
 import back.tesis.entities.EventoSistema;
 import back.tesis.entities.ModeloVersion;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -185,5 +188,66 @@ class NotificacionesServiceTest {
         newService().chequearUmbralesDemanda();
 
         verify(modeloVersionRepository, org.mockito.Mockito.times(1)).findByEmpresaIdAndActivoTrue("emp-1");
+    }
+
+    private static EventoSistema evento(String estado) {
+        EventoSistema evento = new EventoSistema("emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO",
+                EventoSistema.SEVERIDAD_WARNING, "{}");
+        evento.setEstado(estado);
+        return evento;
+    }
+
+    @Test
+    void marcarVistaCambiaEstadoDeActivaAVista() {
+        EventoSistema evento = evento(EventoSistema.ESTADO_ACTIVA);
+        when(eventoRepository.findByIdAndEmpresaId("evt-1", "emp-1")).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(evento)).thenReturn(evento);
+
+        newService().marcarVista("emp-1", "evt-1");
+
+        assertThat(evento.getEstado()).isEqualTo(EventoSistema.ESTADO_VISTA);
+    }
+
+    @Test
+    void marcarVistaFallaSiYaEstaResuelta() {
+        EventoSistema evento = evento(EventoSistema.ESTADO_RESUELTA);
+        when(eventoRepository.findByIdAndEmpresaId("evt-1", "emp-1")).thenReturn(Optional.of(evento));
+
+        assertThatThrownBy(() -> newService().marcarVista("emp-1", "evt-1"))
+                .isInstanceOf(ConflictException.class);
+        verify(eventoRepository, never()).save(any());
+    }
+
+    @Test
+    void marcarVistaThrowsCuandoNoPerteneceALaEmpresa() {
+        when(eventoRepository.findByIdAndEmpresaId("evt-1", "emp-1")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> newService().marcarVista("emp-1", "evt-1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void marcarResueltaSellaFechaYUsuario() {
+        EventoSistema evento = evento(EventoSistema.ESTADO_ACTIVA);
+        when(eventoRepository.findByIdAndEmpresaId("evt-1", "emp-1")).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(evento)).thenReturn(evento);
+
+        newService().marcarResuelta("emp-1", "evt-1", "user-1");
+
+        assertThat(evento.getEstado()).isEqualTo(EventoSistema.ESTADO_RESUELTA);
+        assertThat(evento.getResueltoPor()).isEqualTo("user-1");
+        assertThat(evento.getFechaResolucion()).isNotNull();
+    }
+
+    @Test
+    void marcarResueltaEsIdempotenteSiYaEstabaResuelta() {
+        EventoSistema evento = evento(EventoSistema.ESTADO_RESUELTA);
+        when(eventoRepository.findByIdAndEmpresaId("evt-1", "emp-1")).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(evento)).thenReturn(evento);
+
+        newService().marcarResuelta("emp-1", "evt-1", "user-1");
+
+        assertThat(evento.getEstado()).isEqualTo(EventoSistema.ESTADO_RESUELTA);
+        assertThat(evento.getResueltoPor()).isNull();
     }
 }

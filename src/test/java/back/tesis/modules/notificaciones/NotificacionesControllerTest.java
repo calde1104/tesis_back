@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -51,17 +52,48 @@ class NotificacionesControllerTest {
         TenantContext.clear();
     }
 
+    private static NotificacionDto dtoActiva() {
+        return new NotificacionDto(
+                "evt-1", "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", EventoSistema.SEVERIDAD_WARNING,
+                "{\"umbralDemandaMaxima\":400.0}", EventoSistema.ESTADO_ACTIVA,
+                LocalDateTime.of(2026, 8, 26, 10, 0), null, null);
+    }
+
     @Test
     void listarReturnsPaginatedNotificaciones() throws Exception {
-        NotificacionDto dto = new NotificacionDto(
-                "evt-1", "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", EventoSistema.SEVERIDAD_WARNING,
-                "{\"umbralDemandaMaxima\":400.0}", EventoSistema.ESTADO_ACTIVA, LocalDateTime.of(2026, 8, 26, 10, 0));
-        when(notificacionesService.listar(eq("emp-1"), any())).thenReturn(new PageImpl<>(List.of(dto)));
+        when(notificacionesService.listar(eq("emp-1"), any())).thenReturn(new PageImpl<>(List.of(dtoActiva())));
 
         mockMvc.perform(get("/v1/emp-1/notificaciones"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].tipoEvento").value("UMBRAL_DEMANDA_SUPERADO"))
                 .andExpect(jsonPath("$.content[0].payload.umbralDemandaMaxima").value(400.0));
+    }
+
+    @Test
+    void marcarVistaReturnsUpdatedNotificacion() throws Exception {
+        NotificacionDto vista = new NotificacionDto(
+                "evt-1", "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", EventoSistema.SEVERIDAD_WARNING,
+                "{\"umbralDemandaMaxima\":400.0}", EventoSistema.ESTADO_VISTA,
+                LocalDateTime.of(2026, 8, 26, 10, 0), null, null);
+        when(notificacionesService.marcarVista("emp-1", "evt-1")).thenReturn(vista);
+
+        mockMvc.perform(patch("/v1/emp-1/notificaciones/evt-1/vista"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("VISTA"));
+    }
+
+    @Test
+    void marcarResueltaPassesUsuarioIdFromTenantContext() throws Exception {
+        NotificacionDto resuelta = new NotificacionDto(
+                "evt-1", "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", EventoSistema.SEVERIDAD_WARNING,
+                "{\"umbralDemandaMaxima\":400.0}", EventoSistema.ESTADO_RESUELTA,
+                LocalDateTime.of(2026, 8, 26, 10, 0), LocalDateTime.of(2026, 8, 26, 11, 0), "user-1");
+        when(notificacionesService.marcarResuelta("emp-1", "evt-1", "user-1")).thenReturn(resuelta);
+
+        mockMvc.perform(patch("/v1/emp-1/notificaciones/evt-1/resuelta"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("RESUELTA"))
+                .andExpect(jsonPath("$.resueltoPor").value("user-1"));
     }
 }

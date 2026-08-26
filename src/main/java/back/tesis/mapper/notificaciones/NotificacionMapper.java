@@ -11,6 +11,7 @@ public final class NotificacionMapper {
     public static NotificacionDto toDto(EventoSistema entity) {
         return new NotificacionDto(
                 entity.getId(), entity.getEmpresaId(), entity.getProductoId(), entity.getTipoEvento(),
-                entity.getSeveridad(), entity.getPayload(), entity.getEstado(), entity.getFechaGeneracion());
+                entity.getSeveridad(), entity.getPayload(), entity.getEstado(), entity.getFechaGeneracion(),
+                entity.getFechaResolucion(), entity.getResueltoPor());
     }
 }
