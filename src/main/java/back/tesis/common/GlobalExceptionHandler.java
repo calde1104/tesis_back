@@ -3,6 +3,8 @@ package back.tesis.common;
 import back.tesis.common.exceptions.ConflictException;
 import back.tesis.common.exceptions.InvalidCredentialsException;
 import back.tesis.common.exceptions.InvalidFileException;
+import back.tesis.common.exceptions.MlServiceUnavailableException;
+import back.tesis.common.exceptions.MlValidationException;
 import back.tesis.common.exceptions.ResourceNotFoundException;
 import back.tesis.common.exceptions.TenantMismatchException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +53,16 @@ public class GlobalExceptionHandler {
                 "La operacion viola una restriccion de integridad de datos "
                         + "(referencia inexistente o registro duplicado)",
                 request);
+    }
+
+    @ExceptionHandler(MlServiceUnavailableException.class)
+    public ResponseEntity<ApiError> handleMlServiceUnavailable(MlServiceUnavailableException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(MlValidationException.class)
+    public ResponseEntity<ApiError> handleMlValidation(MlValidationException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
