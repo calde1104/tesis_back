@@ -86,9 +86,9 @@ class NotificacionesServiceTest {
         when(prediccionRepository.findFirstByEmpresaIdAndProductoIdAndModeloIdOrderByAnioAscMesAsc(
                 "emp-1", "prod-1", "modelo-1"))
                 .thenReturn(Optional.of(prediccion("emp-1", "prod-1", 2026, 9, 410f)));
-        when(eventoRepository.existsByEmpresaIdAndProductoIdAndTipoEventoAndEstado(
-                "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", EventoSistema.ESTADO_ACTIVA))
-                .thenReturn(false);
+        when(eventoRepository.countByEmpresaIdAndProductoIdAndTipoEventoAndPeriodo(
+                "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", 2026, 9))
+                .thenReturn(0L);
 
         newService().chequearUmbralesDemanda();
 
@@ -118,7 +118,7 @@ class NotificacionesServiceTest {
     }
 
     @Test
-    void noDuplicaAlertaSiYaHayUnaActivaParaEseProducto() throws Exception {
+    void noDuplicaAlertaSiYaHayUnaParaEseProductoYPeriodoSinImportarElEstado() throws Exception {
         when(configRepository.findByParametroAndProductoIdIsNotNull("UMBRAL_DEMANDA_MAXIMA"))
                 .thenReturn(List.of(umbralConfig("emp-1", "prod-1", "400")));
         when(modeloVersionRepository.findByEmpresaIdAndActivoTrue("emp-1"))
@@ -126,13 +126,31 @@ class NotificacionesServiceTest {
         when(prediccionRepository.findFirstByEmpresaIdAndProductoIdAndModeloIdOrderByAnioAscMesAsc(
                 "emp-1", "prod-1", "modelo-1"))
                 .thenReturn(Optional.of(prediccion("emp-1", "prod-1", 2026, 9, 410f)));
-        when(eventoRepository.existsByEmpresaIdAndProductoIdAndTipoEventoAndEstado(
-                "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", EventoSistema.ESTADO_ACTIVA))
-                .thenReturn(true);
+        when(eventoRepository.countByEmpresaIdAndProductoIdAndTipoEventoAndPeriodo(
+                "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", 2026, 9))
+                .thenReturn(1L);
 
         newService().chequearUmbralesDemanda();
 
         verify(eventoRepository, never()).save(any());
+    }
+
+    @Test
+    void generaAlertaNuevaCuandoElPeriodoPronosticadoCambioAunConUnaAnteriorVista() throws Exception {
+        when(configRepository.findByParametroAndProductoIdIsNotNull("UMBRAL_DEMANDA_MAXIMA"))
+                .thenReturn(List.of(umbralConfig("emp-1", "prod-1", "400")));
+        when(modeloVersionRepository.findByEmpresaIdAndActivoTrue("emp-1"))
+                .thenReturn(Optional.of(modeloActivo("modelo-1", "emp-1")));
+        when(prediccionRepository.findFirstByEmpresaIdAndProductoIdAndModeloIdOrderByAnioAscMesAsc(
+                "emp-1", "prod-1", "modelo-1"))
+                .thenReturn(Optional.of(prediccion("emp-1", "prod-1", 2026, 10, 420f)));
+        when(eventoRepository.countByEmpresaIdAndProductoIdAndTipoEventoAndPeriodo(
+                "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", 2026, 10))
+                .thenReturn(0L);
+
+        newService().chequearUmbralesDemanda();
+
+        verify(eventoRepository).save(any());
     }
 
     @Test

@@ -121,8 +121,8 @@ public class NotificacionesService {
             return false;
         }
 
-        if (eventoRepository.existsByEmpresaIdAndProductoIdAndTipoEventoAndEstado(
-                empresaId, productoId, TIPO_EVENTO_UMBRAL_DEMANDA, EventoSistema.ESTADO_ACTIVA)) {
+        if (eventoRepository.countByEmpresaIdAndProductoIdAndTipoEventoAndPeriodo(
+                empresaId, productoId, TIPO_EVENTO_UMBRAL_DEMANDA, prediccion.getAnio(), prediccion.getMes()) > 0) {
             return false;
         }
 

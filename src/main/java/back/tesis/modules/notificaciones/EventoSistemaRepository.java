@@ -4,6 +4,8 @@ import back.tesis.entities.EventoSistema;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -13,6 +15,15 @@ public interface EventoSistemaRepository extends JpaRepository<EventoSistema, St
 
     Optional<EventoSistema> findByIdAndEmpresaId(String id, String empresaId);
 
-    boolean existsByEmpresaIdAndProductoIdAndTipoEventoAndEstado(
-            String empresaId, String productoId, String tipoEvento, String estado);
+    @Query(value = """
+            SELECT COUNT(*) FROM eventos_sistema
+            WHERE id_empresa = :empresaId AND id_producto = :productoId AND tipo_evento = :tipoEvento
+              AND JSON_EXTRACT(payload, '$.anio') = :anio AND JSON_EXTRACT(payload, '$.mes') = :mes
+            """, nativeQuery = true)
+    long countByEmpresaIdAndProductoIdAndTipoEventoAndPeriodo(
+            @Param("empresaId") String empresaId,
+            @Param("productoId") String productoId,
+            @Param("tipoEvento") String tipoEvento,
+            @Param("anio") int anio,
+            @Param("mes") int mes);
 }
