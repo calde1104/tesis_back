@@ -1,8 +1,8 @@
 package back.tesis.modules.forecast;
 
-import back.tesis.dto.forecast.FeatureImportanceDto;
 import back.tesis.dto.forecast.ForecastAgregadoRow;
 import back.tesis.dto.forecast.ForecastPointDto;
+import back.tesis.dto.forecast.ModelExplainabilityDto;
 import back.tesis.dto.forecast.SimulateRequest;
 import back.tesis.dto.forecast.SimulateResponseDto;
 import back.tesis.entities.ModeloVersion;
@@ -55,7 +55,7 @@ public class ForecastService {
         return mlForecastClient.simulate(empresaId, request);
     }
 
-    public List<FeatureImportanceDto> getFeatureImportance(String empresaId) {
-        return List.of();
+    public ModelExplainabilityDto getFeatureImportance(String empresaId) {
+        return mlForecastClient.getModelExplainability();
     }
 }

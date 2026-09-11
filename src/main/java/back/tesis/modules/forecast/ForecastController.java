@@ -1,7 +1,7 @@
 package back.tesis.modules.forecast;
 
-import back.tesis.dto.forecast.FeatureImportanceDto;
 import back.tesis.dto.forecast.ForecastPointDto;
+import back.tesis.dto.forecast.ModelExplainabilityDto;
 import back.tesis.dto.forecast.SimulateRequest;
 import back.tesis.dto.forecast.SimulateResponseDto;
 import jakarta.validation.Valid;
@@ -37,7 +37,7 @@ public class ForecastController {
     }
 
     @GetMapping("/feature-importance")
-    public List<FeatureImportanceDto> getFeatureImportance(@PathVariable String empresaId) {
+    public ModelExplainabilityDto getFeatureImportance(@PathVariable String empresaId) {
         return forecastService.getFeatureImportance(empresaId);
     }
 }

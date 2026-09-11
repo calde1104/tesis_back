@@ -1,6 +1,7 @@
 package back.tesis.modules.forecast;
 
 import back.tesis.dto.forecast.ForecastAgregadoRow;
+import back.tesis.dto.forecast.ModelExplainabilityDto;
 import back.tesis.dto.forecast.SimulateRequest;
 import back.tesis.dto.forecast.SimulateResponseDto;
 import back.tesis.entities.ModeloVersion;
@@ -107,6 +108,20 @@ class ForecastServiceTest {
         var result = service.simulate("emp-1", request);
 
         assertThat(result.status()).isEqualTo("success");
+    }
+
+    @Test
+    void getFeatureImportanceDelegatesToMlClient() {
+        ModelExplainabilityDto response = new ModelExplainabilityDto(
+                "success", "LinearRegression", 11, java.util.Map.of("Historial y Tendencia", 55.2), List.of());
+        when(mlForecastClient.getModelExplainability()).thenReturn(response);
+
+        ForecastService service = new ForecastService(mlForecastClient, prediccionRepository, modeloVersionRepository);
+
+        var result = service.getFeatureImportance("emp-1");
+
+        assertThat(result.status()).isEqualTo("success");
+        assertThat(result.modeloTipo()).isEqualTo("LinearRegression");
     }
 
     private static ModeloVersion newModeloVersion(String id) throws Exception {
