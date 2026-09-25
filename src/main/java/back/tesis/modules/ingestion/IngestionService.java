@@ -13,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.util.HexFormat;
@@ -104,7 +103,8 @@ public class IngestionService {
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new InvalidFileException("El archivo no tiene nombre");
         }
-        String nombre = Path.of(originalFilename).getFileName().toString().trim();
+        String nombre = originalFilename.substring(
+                Math.max(originalFilename.lastIndexOf('/'), originalFilename.lastIndexOf('\\')) + 1).trim();
         String nombreLower = nombre.toLowerCase(Locale.ROOT);
         boolean extensionValida = EXTENSIONES_PERMITIDAS.stream().anyMatch(nombreLower::endsWith);
         if (!extensionValida) {

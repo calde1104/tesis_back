@@ -129,6 +129,20 @@ class IngestionServiceTest {
     }
 
     @Test
+    void uploadDiscardsWindowsStylePathSegments() {
+        MockMultipartFile file = new MockMultipartFile("file", "C:\\Users\\cliente\\ventas.csv", "text/csv", "contenido".getBytes());
+        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IngestionService service = newService();
+        service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
+
+        ArgumentCaptor<ArchivoIngesta> captor = ArgumentCaptor.forClass(ArchivoIngesta.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getNombreArchivo()).isEqualTo("ventas.csv");
+    }
+
+    @Test
     void borrarSetsEstadoEliminadoWithoutDeletingRow() {
         ArchivoIngesta archivo = new ArchivoIngesta("emp-1", "ventas.csv", "hash123", "MENSUAL",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
