@@ -3,6 +3,9 @@ package back.tesis.modules.forecast;
 import back.tesis.common.exceptions.MlServiceUnavailableException;
 import back.tesis.common.exceptions.MlValidationException;
 import back.tesis.dto.forecast.ModelExplainabilityDto;
+import back.tesis.dto.forecast.SimulateRequest;
+import back.tesis.dto.forecast.SimulateResponseDto;
+import back.tesis.dto.forecast.VariacionesAplicadasDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -11,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClient.RequestBodySpec;
+import org.springframework.web.client.RestClient.RequestBodyUriSpec;
 import org.springframework.web.client.RestClient.RequestHeadersSpec;
 import org.springframework.web.client.RestClient.RequestHeadersUriSpec;
 import org.springframework.web.client.RestClient.ResponseSpec;
@@ -36,6 +41,12 @@ class RealMlForecastClientTest {
 
     @Mock
     private ResponseSpec responseSpec;
+
+    @Mock
+    private RequestBodyUriSpec requestBodyUriSpec;
+
+    @Mock
+    private RequestBodySpec requestBodySpec;
 
     @Test
     @SuppressWarnings("unchecked")
@@ -82,5 +93,46 @@ class RealMlForecastClientTest {
 
         assertThatThrownBy(client::getModelExplainability)
                 .isInstanceOf(MlValidationException.class);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void simulateReturnsTheResponseFromTheMlService() {
+        SimulateRequest request = new SimulateRequest("prod-1", 5.0, 0.0, 2.0);
+        SimulateResponseDto respuestaEsperada = new SimulateResponseDto(
+                "success", "prod-1", new VariacionesAplicadasDto(5.0, 0.0, 2.0), List.of());
+
+        when(mlRestClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/simulation/predict")).thenReturn(requestBodySpec);
+        when(requestBodySpec.body(request)).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.body(SimulateResponseDto.class)).thenReturn(respuestaEsperada);
+
+        RealMlForecastClient client = new RealMlForecastClient(mlRestClient);
+
+        SimulateResponseDto resultado = client.simulate("emp-1", request);
+
+        assertThat(resultado.status()).isEqualTo("success");
+        assertThat(resultado.idProducto()).isEqualTo("prod-1");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void simulateSeDegradaAUnFallbackSimuladoSiElMicroservicioNoResponde() {
+        SimulateRequest request = new SimulateRequest("prod-1", 5.0, 0.0, 2.0);
+
+        when(mlRestClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/simulation/predict")).thenReturn(requestBodySpec);
+        when(requestBodySpec.body(request)).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenThrow(new ResourceAccessException("timeout"));
+
+        RealMlForecastClient client = new RealMlForecastClient(mlRestClient);
+
+        SimulateResponseDto resultado = client.simulate("emp-1", request);
+
+        assertThat(resultado.status()).isEqualTo("simulado_fallback");
+        assertThat(resultado.idProducto()).isEqualTo("prod-1");
+        assertThat(resultado.variacionesAplicadas().precioPct()).isEqualTo(5.0);
+        assertThat(resultado.simulacion()).isEmpty();
     }
 }

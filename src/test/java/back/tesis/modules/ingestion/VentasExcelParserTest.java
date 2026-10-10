@@ -1,5 +1,6 @@
 package back.tesis.modules.ingestion;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -96,5 +97,86 @@ class VentasExcelParserTest {
 
         assertThat(result.errores()).hasSize(1);
         assertThat(result.filas()).isEmpty();
+    }
+
+    @Test
+    void workbookSinNingunaHojaProduceError() {
+        byte[] xlsx;
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            xlsx = out.toByteArray();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        ParseResult result = VentasExcelParser.parse(xlsx);
+
+        assertThat(result.errores()).containsExactly("El archivo esta vacio");
+        assertThat(result.filas()).isEmpty();
+    }
+
+    @Test
+    void unArchivoIlegibleProduceUnErrorEnVezDeRomperElProceso() {
+        byte[] basura = "esto no es un xlsx valido".getBytes();
+
+        ParseResult result = VentasExcelParser.parse(basura);
+
+        assertThat(result.filas()).isEmpty();
+        assertThat(result.errores()).hasSize(1);
+        assertThat(result.errores().get(0)).contains("No se pudo leer el archivo Excel");
+    }
+
+    @Test
+    void leeColumnasNumericasConvirtiendolasAEnteroSinDecimalesSobrantes() {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("ventas");
+            escribirFila(sheet, 0, new String[]{"sku", "anio", "mes", "unidades_vendidas", "monto_facturado"});
+            Row fila = sheet.createRow(1);
+            fila.createCell(0).setCellValue("SKU-1");
+            fila.createCell(1).setCellValue(2024);
+            fila.createCell(2).setCellValue(3);
+            fila.createCell(3).setCellValue(10);
+            fila.createCell(4).setCellValue(1500.50);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+
+            ParseResult result = VentasExcelParser.parse(out.toByteArray());
+
+            assertThat(result.errores()).isEmpty();
+            VentaRow row = result.filas().get(0);
+            assertThat(row.anio()).isEqualTo(2024);
+            assertThat(row.periodo()).isEqualTo(3);
+            assertThat(row.montoFacturado()).isEqualByComparingTo("1500.50");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Test
+    void leeCeldasConFormulaUsandoElResultadoCacheado() {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("ventas");
+            escribirFila(sheet, 0, new String[]{"sku", "anio", "mes", "unidades_vendidas", "monto_facturado"});
+            Row fila = sheet.createRow(1);
+            fila.createCell(0).setCellValue("SKU-1");
+            fila.createCell(1).setCellValue(2024);
+            fila.createCell(2).setCellValue(3);
+            Cell celdaFormula = fila.createCell(3);
+            celdaFormula.setCellFormula("5+5");
+            celdaFormula.setCellValue(10.0);
+            fila.createCell(4).setCellValue(1000.0);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+
+            ParseResult result = VentasExcelParser.parse(out.toByteArray());
+
+            assertThat(result.errores()).isEmpty();
+            assertThat(result.filas().get(0).unidadesVendidas()).isEqualTo(10);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
