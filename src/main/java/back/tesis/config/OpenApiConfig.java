@@ -14,7 +14,7 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI tesisOpenApi() {
         return new OpenAPI()
-                .info(new Info().title("Tesis Backend API").version("v1"))
+                .info(new Info().title("Predictive B2B API").version("v1"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components().addSecuritySchemes("bearerAuth",
                         new SecurityScheme()
