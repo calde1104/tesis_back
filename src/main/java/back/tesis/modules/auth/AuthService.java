@@ -66,6 +66,10 @@ public class AuthService {
 
         UsuarioAuth usuario = usuarioOpt.get();
 
+        if (!usuario.isActivo()) {
+            throw new InvalidCredentialsException("Credenciales invalidas");
+        }
+
         Rol rol = rolRepository.findById(usuario.getRolId())
                 .orElseThrow(() -> new InvalidCredentialsException("Rol de usuario invalido"));
         Empresa empresa = empresaRepository.findById(usuario.getEmpresaId())

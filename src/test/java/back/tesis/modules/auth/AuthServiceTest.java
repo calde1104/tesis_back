@@ -95,6 +95,19 @@ class AuthServiceTest {
     }
 
     @Test
+    void loginFailsWhenUsuarioInactivo() throws Exception {
+        Usuario usuario = newUsuario("emp-1", 1, "user@test.com", "hashed");
+        usuario.baja();
+        when(usuarioRepository.findByEmail("user@test.com")).thenReturn(List.<UsuarioAuth>of(usuario));
+        when(passwordEncoder.matches("plain", "hashed")).thenReturn(true);
+
+        AuthService service = new AuthService(usuarioRepository, rolRepository, empresaRepository, passwordEncoder, jwtService);
+
+        assertThatThrownBy(() -> service.login(new LoginRequest("user@test.com", "plain")))
+                .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
     void loginFailsWithConflictWhenEmailBelongsToMultipleEmpresas() throws Exception {
         Usuario usuario1 = newUsuario("emp-1", 1, "duplicado@test.com", "hashed1");
         Usuario usuario2 = newUsuario("emp-2", 1, "duplicado@test.com", "hashed2");

@@ -11,4 +11,6 @@ public interface UsuarioAuth {
     String getEmail();
 
     String getPasswordHash();
+
+    boolean isActivo();
 }

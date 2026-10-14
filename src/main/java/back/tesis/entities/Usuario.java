@@ -26,6 +26,9 @@ public class Usuario extends UuidEntity implements UsuarioAuth {
     @Column(name = "foto_perfil_tipo")
     private String fotoPerfilTipo;
 
+    @Column(nullable = false)
+    private boolean activo = true;
+
     protected Usuario() {
     }
 
@@ -68,5 +71,13 @@ public class Usuario extends UuidEntity implements UsuarioAuth {
     public void quitarFoto() {
         this.fotoPerfil = null;
         this.fotoPerfilTipo = null;
+    }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void baja() {
+        this.activo = false;
     }
 }

@@ -65,6 +65,12 @@ public class ProfileService {
         }
     }
 
+    public void eliminarCuenta(String usuarioId) {
+        Usuario usuario = cargarUsuario(usuarioId);
+        usuario.baja();
+        usuarioRepository.save(usuario);
+    }
+
     private void validar(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new InvalidFileException("El archivo de imagen esta vacio");

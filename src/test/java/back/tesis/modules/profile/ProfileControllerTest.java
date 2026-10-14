@@ -120,6 +120,14 @@ class ProfileControllerTest {
         verify(profileService).deleteFoto("user-1");
     }
 
+    @Test
+    void deleteCuentaDevuelve204() throws Exception {
+        mockMvc.perform(delete("/v1/emp-1/profile"))
+                .andExpect(status().isNoContent());
+
+        verify(profileService).eliminarCuenta("user-1");
+    }
+
     @TestConfiguration
     static class TenantGuardTestConfig implements WebMvcConfigurer {
         @Override

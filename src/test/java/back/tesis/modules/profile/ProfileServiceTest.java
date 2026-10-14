@@ -138,6 +138,24 @@ class ProfileServiceTest {
         verify(usuarioRepository).save(usuario);
     }
 
+    @Test
+    void eliminarCuentaMarcaInactivoYPersiste() {
+        when(usuarioRepository.findById("user-1")).thenReturn(Optional.of(usuario));
+
+        service.eliminarCuenta("user-1");
+
+        assertThat(usuario.isActivo()).isFalse();
+        verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    void eliminarCuentaUsuarioInexistenteLanza404() {
+        when(usuarioRepository.findById("nope")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.eliminarCuenta("nope"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
     private Rol newRol(int id, String nombre) throws Exception {
         var constructor = Rol.class.getDeclaredConstructor();
         constructor.setAccessible(true);

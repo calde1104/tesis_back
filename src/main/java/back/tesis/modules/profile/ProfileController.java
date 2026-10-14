@@ -41,6 +41,12 @@ public class ProfileController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping
+    public ResponseEntity<Void> deleteCuenta(@PathVariable String empresaId) {
+        profileService.eliminarCuenta(usuarioActual());
+        return ResponseEntity.noContent().build();
+    }
+
     private String usuarioActual() {
         return TenantContext.get().usuarioId();
     }
