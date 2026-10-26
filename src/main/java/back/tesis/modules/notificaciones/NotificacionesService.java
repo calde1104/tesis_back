@@ -30,7 +30,7 @@ public class NotificacionesService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificacionesService.class);
 
-    static final String PARAMETRO_UMBRAL_DEMANDA = "UMBRAL_DEMANDA_MAXIMA";
+    public static final String PARAMETRO_UMBRAL_DEMANDA = "UMBRAL_DEMANDA_MAXIMA";
     static final String TIPO_EVENTO_UMBRAL_DEMANDA = "UMBRAL_DEMANDA_SUPERADO";
 
     private final ConfigSistemaRepository configRepository;
@@ -92,6 +92,10 @@ public class NotificacionesService {
         }
         log.info("Chequeo de umbrales de demanda: {} umbrales evaluados, {} alertas nuevas generadas",
                 umbrales.size(), generadas);
+    }
+
+    public boolean chequearUmbralInmediato(ConfigSistema umbralConfig) {
+        return procesarUmbral(umbralConfig, new HashMap<>());
     }
 
     private boolean procesarUmbral(ConfigSistema umbralConfig, Map<String, Optional<ModeloVersion>> modeloActivoPorEmpresa) {

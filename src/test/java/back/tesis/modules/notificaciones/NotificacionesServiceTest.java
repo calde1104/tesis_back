@@ -258,6 +258,42 @@ class NotificacionesServiceTest {
     }
 
     @Test
+    void chequearUmbralInmediatoGeneraAlertaCuandoLaPrediccionLoSupera() throws Exception {
+        ConfigSistema umbral = umbralConfig("emp-1", "prod-1", "400");
+        when(modeloVersionRepository.findByEmpresaIdAndActivoTrue("emp-1"))
+                .thenReturn(Optional.of(modeloActivo("modelo-1", "emp-1")));
+        when(prediccionRepository.findFirstByEmpresaIdAndProductoIdAndModeloIdOrderByAnioAscMesAsc(
+                "emp-1", "prod-1", "modelo-1"))
+                .thenReturn(Optional.of(prediccion("emp-1", "prod-1", 2026, 11, 450f)));
+        when(eventoRepository.countByEmpresaIdAndProductoIdAndTipoEventoAndPeriodo(
+                "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", 2026, 11))
+                .thenReturn(0L);
+
+        boolean genero = newService().chequearUmbralInmediato(umbral);
+
+        assertThat(genero).isTrue();
+        verify(eventoRepository).save(any());
+    }
+
+    @Test
+    void chequearUmbralInmediatoNoDuplicaSiYaHayAlertaParaEseProductoYPeriodo() throws Exception {
+        ConfigSistema umbral = umbralConfig("emp-1", "prod-1", "400");
+        when(modeloVersionRepository.findByEmpresaIdAndActivoTrue("emp-1"))
+                .thenReturn(Optional.of(modeloActivo("modelo-1", "emp-1")));
+        when(prediccionRepository.findFirstByEmpresaIdAndProductoIdAndModeloIdOrderByAnioAscMesAsc(
+                "emp-1", "prod-1", "modelo-1"))
+                .thenReturn(Optional.of(prediccion("emp-1", "prod-1", 2026, 11, 450f)));
+        when(eventoRepository.countByEmpresaIdAndProductoIdAndTipoEventoAndPeriodo(
+                "emp-1", "prod-1", "UMBRAL_DEMANDA_SUPERADO", 2026, 11))
+                .thenReturn(1L);
+
+        boolean genero = newService().chequearUmbralInmediato(umbral);
+
+        assertThat(genero).isFalse();
+        verify(eventoRepository, never()).save(any());
+    }
+
+    @Test
     void marcarResueltaEsIdempotenteSiYaEstabaResuelta() {
         EventoSistema evento = evento(EventoSistema.ESTADO_RESUELTA);
         when(eventoRepository.findByIdAndEmpresaId("evt-1", "emp-1")).thenReturn(Optional.of(evento));
