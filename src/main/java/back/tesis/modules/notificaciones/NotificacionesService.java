@@ -125,8 +125,9 @@ public class NotificacionesService {
             return false;
         }
 
-        if (eventoRepository.countByEmpresaIdAndProductoIdAndTipoEventoAndPeriodo(
-                empresaId, productoId, TIPO_EVENTO_UMBRAL_DEMANDA, prediccion.getAnio(), prediccion.getMes()) > 0) {
+        Optional<Double> umbralDeLaUltimaAlerta = eventoRepository.findUmbralDeLaUltimaAlertaDelPeriodo(
+                empresaId, productoId, TIPO_EVENTO_UMBRAL_DEMANDA, prediccion.getAnio(), prediccion.getMes());
+        if (umbralDeLaUltimaAlerta.isPresent() && Math.abs(umbralDeLaUltimaAlerta.get() - umbral) < 0.0001) {
             return false;
         }
 
