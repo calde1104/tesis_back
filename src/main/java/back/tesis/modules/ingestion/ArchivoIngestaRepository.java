@@ -12,5 +12,5 @@ public interface ArchivoIngestaRepository extends JpaRepository<ArchivoIngesta, 
 
     Optional<ArchivoIngesta> findByIdAndEmpresaId(String id, String empresaId);
 
-    boolean existsByHashSha256(String hashSha256);
+    boolean existsByHashSha256AndEstadoNot(String hashSha256, String estado);
 }

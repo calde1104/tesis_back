@@ -57,7 +57,7 @@ class IngestionServiceTest {
     @Test
     void uploadRejectsDuplicateHash() {
         MockMultipartFile file = new MockMultipartFile("file", "ventas.csv", "text/csv", "contenido".getBytes());
-        when(repository.existsByHashSha256(any())).thenReturn(true);
+        when(repository.existsByHashSha256AndEstadoNot(any(), any())).thenReturn(true);
 
         IngestionService service = newService();
 
@@ -67,9 +67,21 @@ class IngestionServiceTest {
     }
 
     @Test
+    void uploadPermiteResubirUnHashCuyoUnicoArchivoPrevioFueEliminado() {
+        MockMultipartFile file = new MockMultipartFile("file", "ventas.csv", "text/csv", "sku,anio,mes,unidades_vendidas,monto_facturado".getBytes());
+        when(repository.existsByHashSha256AndEstadoNot(any(), eq(ArchivoIngesta.ESTADO_ELIMINADO))).thenReturn(false);
+        when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IngestionService service = newService();
+        service.upload("emp-1", file, "MENSUAL", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
+
+        verify(processor).procesar(any(), eq("emp-1"), eq("MENSUAL"), any());
+    }
+
+    @Test
     void uploadSavesFileAndTriggersProcessor() {
         MockMultipartFile file = new MockMultipartFile("file", "ventas.csv", "text/csv", "sku,anio,mes,unidades_vendidas,monto_facturado".getBytes());
-        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.existsByHashSha256AndEstadoNot(any(), any())).thenReturn(false);
         when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         IngestionService service = newService();
@@ -105,7 +117,7 @@ class IngestionServiceTest {
     void uploadAcceptsXlsxExtension() {
         MockMultipartFile file = new MockMultipartFile("file", "ventas.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "contenido".getBytes());
-        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.existsByHashSha256AndEstadoNot(any(), any())).thenReturn(false);
         when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         IngestionService service = newService();
@@ -117,7 +129,7 @@ class IngestionServiceTest {
     @Test
     void uploadSanitizesOriginalFilename() {
         MockMultipartFile file = new MockMultipartFile("file", "../../etc/ventas <script>.csv", "text/csv", "contenido".getBytes());
-        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.existsByHashSha256AndEstadoNot(any(), any())).thenReturn(false);
         when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         IngestionService service = newService();
@@ -131,7 +143,7 @@ class IngestionServiceTest {
     @Test
     void uploadDiscardsWindowsStylePathSegments() {
         MockMultipartFile file = new MockMultipartFile("file", "C:\\Users\\cliente\\ventas.csv", "text/csv", "contenido".getBytes());
-        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.existsByHashSha256AndEstadoNot(any(), any())).thenReturn(false);
         when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         IngestionService service = newService();
@@ -143,7 +155,7 @@ class IngestionServiceTest {
     }
 
     @Test
-    void borrarSetsEstadoEliminadoWithoutDeletingRow() {
+    void borrarMarcaEstadoEliminadoYPurgaLasVentasAsociadas() {
         ArchivoIngesta archivo = new ArchivoIngesta("emp-1", "ventas.csv", "hash123", "MENSUAL",
                 LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31));
         when(repository.findByIdAndEmpresaId("arch-1", "emp-1")).thenReturn(Optional.of(archivo));
@@ -153,6 +165,8 @@ class IngestionServiceTest {
         service.borrar("emp-1", "arch-1");
 
         assertThat(archivo.getEstado()).isEqualTo(ArchivoIngesta.ESTADO_ELIMINADO);
+        verify(ventaMensualCountRepository).deleteByArchivoId("arch-1");
+        verify(ventaSemanalCountRepository).deleteByArchivoId("arch-1");
     }
 
     @Test
@@ -200,7 +214,7 @@ class IngestionServiceTest {
     @Test
     void uploadCreaTambienUnSelloDeAuditoriaIntegridadValido() {
         MockMultipartFile file = new MockMultipartFile("file", "ventas.csv", "text/csv", "contenido".getBytes());
-        when(repository.existsByHashSha256(any())).thenReturn(false);
+        when(repository.existsByHashSha256AndEstadoNot(any(), any())).thenReturn(false);
         when(repository.save(any(ArchivoIngesta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         IngestionService service = newService();

@@ -11,6 +11,7 @@ import back.tesis.mapper.ingestion.IngestionMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.MessageDigest;
@@ -51,7 +52,7 @@ public class IngestionService {
         validarContentType(file.getContentType());
         byte[] contenido = readBytes(file);
         String hash = sha256(contenido);
-        if (repository.existsByHashSha256(hash)) {
+        if (repository.existsByHashSha256AndEstadoNot(hash, ArchivoIngesta.ESTADO_ELIMINADO)) {
             throw new ConflictException("El archivo ya fue cargado previamente (hash duplicado)");
         }
 
@@ -86,9 +87,12 @@ public class IngestionService {
         return IngestionMapper.toUploadResponseDto(archivo, "Reintentando procesamiento");
     }
 
+    @Transactional
     public void borrar(String empresaId, String archivoId) {
         ArchivoIngesta archivo = repository.findByIdAndEmpresaId(archivoId, empresaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Archivo de ingesta no encontrado: " + archivoId));
+        ventaMensualCountRepository.deleteByArchivoId(archivoId);
+        ventaSemanalCountRepository.deleteByArchivoId(archivoId);
         archivo.setEstado(ArchivoIngesta.ESTADO_ELIMINADO);
         repository.save(archivo);
     }
